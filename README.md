@@ -1,97 +1,209 @@
 # Agent-911 × WatchdogQuorum
 
-> **The primitive:** Autonomous agents need an external failure oracle. WatchdogQuorum lets independent agents attest that another agent is unhealthy, then triggers a preauthorized recovery action.
+> **The primitive:** Autonomous agents need an external failure oracle. `WatchdogQuorum` lets independent agents attest that another agent is unhealthy, then triggers a preauthorized recovery action.
 >
-> **The demo:** When an onchain treasury agent crashes, independent ENS-named watchdogs prove failure onchain and Keeper executes the precommitted rescue — before the market does it for you.
+> **The demo:** When an onchain treasury agent crashes, independent ENS-named watchdogs on separate Gensyn AXL nodes prove failure onchain and KeeperHub executes the precommitted rescue — before the market does it for you.
 
-Built for **ETHGlobal OpenAgents** (Apr 24 – May 3, 2026).
+Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 3).
+
+---
 
 ## Why this exists
 
-In February 2026, an AI agent cascade triggered **$400M in liquidations** as autonomous trading agents simultaneously exited positions. 40% of on-chain transactions are now initiated by agents. Agentic wallets solve the *intent* problem (spending caps, whitelists, human leashes). None solve the **post-crash problem**: when an agent itself dies, hangs, or misses a liquidation window, funds are stranded in positions that were only safe while the agent was healthy.
+In February 2026, an AI agent cascade triggered **$400M in liquidations** as autonomous trading agents simultaneously exited positions. 40% of on-chain transactions are now initiated by agents. Agentic wallets (Coinbase, Human.tech, Openfort) solve the *intent* problem — spending caps, whitelists, human leashes — but **none solve the post-crash problem**: when the agent itself dies, hangs, hallucinates, or misses a liquidation window, funds are stranded in positions that were only safe while the agent was healthy.
 
-A dead-man's-switch Safe module can't solve this either — it's timer-based. Agent-911 is *observer-based* with a *contextual runbook*.
+A Safe dead-man's-switch can't solve this either — it's timer-based. Agent-911 is *observer-based* with a *contextual runbook*.
 
-## How it works
+## The 20-second demo
 
-1. Before the agent starts, it registers a vault (`Agent911Vault`), a content-addressed runbook on **0G Storage**, and three independent watchdog agents on **separate AXL nodes** with ENS subnames (`main.agent911.eth`, `watchdog-{1,2,3}.agent911.eth`).
-2. Each watchdog monitors heartbeat independently.
-3. On silence, each signs an EIP-712 `FailureAttestation`.
-4. Two of three signatures bundled into `confirmFailure(policyId, sigs[])` → **`WatchdogQuorum.sol`** emits `FailureConfirmed`.
-5. **KeeperHub** (pre-warmed webhook) executes `Agent911Vault.rescue(policyId)` — exit position, swap to USDC via **Uniswap**, transfer to safe address.
-6. Receipt stored on 0G Storage for audit.
-
-```
-Main agent (dies) ──heartbeat──► 3 Watchdogs on separate AXL nodes
-                                        │
-                                        │ 2-of-3 EIP-712 attestations
-                                        ▼
-                               WatchdogQuorum.sol
-                                        │ FailureConfirmed
-                                        ▼
-                            KeeperHub (guaranteed exec)
-                                        │
-                                        ▼
-                               Agent911Vault.rescue() ──► Uniswap swap ──► safe.agent911.eth
+```bash
+pnpm demo:start          # in terminal 1: brings up everything
+pnpm demo:kill           # in terminal 2: SIGKILL main-agent
+                         # open http://127.0.0.1:4000 and watch the rescue
+pnpm demo:reset          # tear it all down
 ```
 
-## Sponsor stack
+What you'll see on the dashboard:
+- **Main agent** heartbeats green, then flips to OFFLINE when killed.
+- **Three ENS-named watchdogs** on distinct AXL nodes independently observe the silence, sign EIP-712 `FailureAttestation`s, send them through the AXL mesh.
+- **A 2-of-3 quorum** fires `FailureConfirmed` onchain.
+- **Rescue** sweeps the vault balance to the policy owner's safe address.
+- A live `KILL-TO-SAFE` timer shows actual end-to-end rescue latency (measured ~13.5s under anvil; ~30s optimistic / ~90s realistic on public infra).
+
+## Architecture
+
+```
+Main agent (dies)  ─heartbeat─►  3 Watchdogs, each on distinct AXL node
+                                          │
+                                          │  2-of-3 EIP-712 attestations
+                                          │  over Gensyn AXL /send /recv
+                                          ▼
+                                WatchdogQuorum.sol (0G Chain)
+                                          │ FailureConfirmed
+                                          ▼
+                                KeeperHub (guaranteed exec)
+                                          │ rescue tx
+                                          ▼
+                              Agent911Vault.rescue(policyId, token)
+                                          │
+                                          ▼
+                            reads policyNFT.safeAddressOf(tokenId)
+                                          │
+                           ──────┬─────────┴────────────────────────
+                           │ OR via Agent911UniswapExecutor       │
+                           │   exit-position → USDC via v3 SwapRouter
+                                          │
+                                          ▼
+                                  safe.agent911.eth
+```
+
+## What's on-chain
+
+| Contract | Role |
+|---|---|
+| `WatchdogQuorum.sol` | EIP-712 m-of-n failure oracle. `registerPolicy` + `confirmFailure(bundled sigs)`. Reusable primitive — any project can register its own watchdog set. |
+| `Agent911Vault.sol` | Holds ERC20 deposits. `rescue(policyId, token)` is permissionless but gated on `quorum.isFailed()`. Sweeps to policy NFT's safe address. |
+| `Agent911PolicyNFT.sol` | ERC-7857-flavored ERC-721. Owner controls the encrypted runbook URI, metadata hash, and safe address. Transferring the NFT changes the rescue target without redeploying the vault. |
+| `Agent911UniswapExecutor.sol` | Optional rescue extension. Unwinds volatile positions into USDC via Uniswap v3 `exactInputSingle` before forwarding to safe. |
+| `AgentIdentityRegistry.sol` | ERC-8004-style trustless agent identity + reputation + validation. Agents register, operators sign, feedback accumulates onchain. |
+
+## Sponsor stack (every API is load-bearing)
 
 | Sponsor | What it does here | Why this API |
 |---|---|---|
-| **0G Storage** | Runbook + encrypted policy metadata | Can't live in the dying agent. |
-| **0G Compute (sealed)** | TEE executor decrypts runbook, emits signed `RescuePlan` | Private decision logic can't be front-run. |
-| **0G Chain** | `WatchdogQuorum` + `Agent911Vault` + `Agent911PolicyNFT` | EVM, fast finality. |
-| **Gensyn AXL** | Three watchdog binaries on distinct ports | Watchdogs on same host die with agent — definitional separation. |
-| **KeeperHub** | Guaranteed rescue execution after quorum | Core value prop; without guarantee, rescue can be dropped. |
-| **Uniswap** | Swap exit-position → USDC | Universal rescue route. `<internal>` included. |
-| **ENS** | Subnames for every agent | First-class identifier in ERC-8004 registry. |
-| **ERC-7857** | `Agent911PolicyNFT` | Policy is transferable/tradeable insurance product. |
-| **ERC-8004** | Agent identity + reputation | New Ethereum standard (mainnet Jan 29, 2026). |
+| **0G Chain** | Deploys `WatchdogQuorum` + `Agent911Vault` + `Agent911PolicyNFT` + `Agent911UniswapExecutor` + `AgentIdentityRegistry`. Testnet chain 16602. | EVM, ~2s block time. |
+| **0G Storage** | Encrypted runbook (AES-256-GCM) content-addressed. `metadataHash = keccak256(ciphertext)` committed onchain. | The runbook can't live in the dying agent. |
+| **0G Compute (sealed)** | Planned hook: TEE executor decrypts runbook, emits signed `RescuePlan` that the vault verifies. Stub today; wires up once sealed-inference enclaves are provisioned. | Private decision logic kept hidden until rescue fires. |
+| **Gensyn AXL** | **3 AXL binaries running as 3 distinct Yggdrasil peers on ports 9101/9102/9103.** Watchdogs send EIP-712 signatures over `/send`, coordinator polls `/recv`. Real mesh — not in-process. | Definitional: a watchdog on the same host as the agent dies *with* it. |
+| **KeeperHub** | Pre-warmed webhook triggers `Agent911Vault.rescue(...)` after `FailureConfirmed` emits. Falls back to direct ethers signer when `KH_API_KEY` unset. | Guaranteed execution — without it rescue can be front-run or dropped. |
+| **Uniswap** | `Agent911UniswapExecutor.rescueWithSwap` takes `SwapPlan{tokenIn, tokenOut, fee, minOut, deadline}` and calls `exactInputSingle`. | Universal exit route to a safe asset. |
+| **ENS** | Every actor has an ENS subname under `agent911.eth`: `main.agent911.eth`, `watchdog-{1,2,3}.agent911.eth`, `safe.agent911.eth`. | First-class identifier in ERC-8004 Identity Registry (per ENS × ERC-8004 blog). |
+| **ERC-7857** | `Agent911PolicyNFT` is the runbook iNFT — owner controls safe address + encrypted URI. | Transfer the NFT → rescue behavior changes without vault redeploy. |
+| **ERC-8004** | `AgentIdentityRegistry` — Identity + Reputation + Validation registries live on 0G Chain. Watchdog reputation grows per correct attestation. | Brand-new Ethereum standard (mainnet Jan 29, 2026). |
 
-## Running the demo
+## Running locally
+
+### Prerequisites
+
+- Node.js 22+, pnpm 10+
+- Foundry (`forge`, `cast`, `anvil`) — install with `curl -L https://foundry.paradigm.xyz | bash && foundryup`
+- Go 1.22+ (to build Gensyn AXL)
+
+### Setup
 
 ```bash
+git clone https://github.com/guzus/agent-911
+cd agent-911
 pnpm install
-pnpm hardhat compile
-pnpm hardhat test
-pnpm demo:start   # seeds position, boots agent + 3 watchdogs
-# In another terminal:
-pnpm demo:kill    # kill -9 on main agent
-# Watch the dashboard at http://localhost:3000
-pnpm demo:reset
+forge build
 ```
 
-## Layout
+### Build Gensyn AXL
 
-- `contracts/` — `WatchdogQuorum.sol`, `Agent911Vault.sol`, `Agent911PolicyNFT.sol`
-- `agents/` — `main-agent.ts`, `watchdog-node-{1,2,3}.ts`, `rescue-executor.ts`
-- `lib/` — `axl.ts`, `keeperhub.ts`, `zeroGStorage.ts`, `uniswap.ts`
-- `scripts/` — `spike-rescue.ts`, `seed-position.ts`, `demo-{start,kill-agent,reset}.ts`
-- `app/` — Next.js dashboard
-- `docs/architecture.md`
-- `<internal>` — Uniswap dev platform feedback
+```bash
+git clone https://github.com/gensyn-ai/axl && ( cd axl && go build -o /tmp/axl-node ./cmd/node/ )
+export AXL_NODE=/tmp/axl-node
+```
 
-## Known failure modes (and mitigations)
+### Run the demo
 
-- **False positive** → require per-watchdog observation source; reject quorum if all three RPC endpoints match.
-- **Correlated observation** → watchdog attestation includes RPC fingerprint.
-- **Stale runbook** → TTL + version hash enforced in `Agent911Vault.rescue`.
+```bash
+bash infra/axl/up.sh          # 3-node mesh (generates per-node PEM keys on first run)
+pnpm demo:start               # (in terminal 1)
+pnpm demo:kill                # (in terminal 2) — the inflection moment
+# open http://127.0.0.1:4000 to watch
+pnpm demo:reset               # clean teardown
+bash infra/axl/down.sh        # stop the mesh
+```
+
+### Tests
+
+```bash
+forge test -vv                # 19 contract tests
+pnpm spike                    # Gate 2: file-bus end-to-end kill→rescue
+pnpm spike:axl                # Gate 2: AXL-mesh end-to-end kill→rescue
+pnpm exec tsx scripts/axl-smoke.ts  # 3-node topology + send/recv roundtrip
+```
+
+## Deployment
+
+```bash
+cp .env.example .env          # fill in PRIVATE_KEY etc.
+pnpm deploy:0g                # 0G testnet
+```
+
+Testnet deployer: `0xa64ed1bd9D75338f65F8E1d65b58330D9A4E0091` — fund via https://faucet.0g.ai before deploy.
+
+## Project layout
+
+```
+contracts (forge)
+  src/WatchdogQuorum.sol             # EIP-712 m-of-n oracle
+  src/Agent911Vault.sol              # rescue-gated ERC20 vault
+  src/Agent911PolicyNFT.sol          # ERC-7857-flavored policy iNFT
+  src/Agent911UniswapExecutor.sol    # Uniswap v3 rescue extension
+  src/AgentIdentityRegistry.sol      # ERC-8004-lite identity + reputation
+  src/mocks/MockERC20.sol
+  test/*.t.sol                       # 19 tests, Foundry
+  script/Deploy.s.sol                # 0G deploy script
+
+agents
+  agents/main-agent.ts               # heartbeat emitter
+  agents/watchdog.ts                 # file-bus watchdog (Gate 2 A)
+  agents/watchdog-axl.ts             # AXL-routed watchdog (Gate 2 B)
+
+libs
+  lib/eip712.ts                      # attestation signer
+  lib/heartbeat-bus.ts               # file-backed heartbeat
+  lib/contracts.ts                   # ABI loader from Foundry out/
+  lib/axl.ts                         # Gensyn AXL HTTP client
+  lib/zero-g-storage.ts              # encrypted runbook + 0G upload
+  lib/keeperhub.ts                   # KeeperHub client + local fallback
+
+orchestration
+  scripts/spike-rescue.ts            # Gate 2 (file bus)
+  scripts/spike-rescue-axl.ts        # Gate 2 (real AXL mesh)
+  scripts/axl-smoke.ts               # AXL mesh health check
+  scripts/demo-start.ts              # full demo bring-up
+  scripts/demo-kill-agent.ts         # the inflection point
+  scripts/demo-reset.ts              # one-command teardown
+  scripts/event-bus.ts               # SSE server + dashboard HTML
+
+infra
+  infra/axl/node-{1,2,3}/node-config.json
+  infra/axl/up.sh / down.sh / status.sh
+```
+
+## Measured rescue timing
+
+From `spike:axl` on anvil (2s block time):
+
+| Segment | Time |
+|---|---:|
+| Kill → 3/3 attestations via AXL | ~9.4s |
+| Kill → `FailureConfirmed` onchain | ~9.4s |
+| Kill → funds at safe | ~13.5s |
+
+Realistic public-infrastructure budget (from our red-team analysis in [<internal>](./<internal>)): 30s optimistic / 98s realistic / 2-5 min in the bad case. We pre-warm the KeeperHub webhook and bundle all attestations into one quorum tx to stay under 1 minute.
+
+## Known failure modes (not hidden)
+
+- **False positive** → require per-watchdog observation source; reject quorum if all three RPC endpoints match (not yet enforced onchain).
+- **Correlated observation** → watchdog attestation includes a source fingerprint (off-chain, Day-8 polish).
+- **Stale runbook** → TTL + version hash in Agent911Vault (planned).
 - **Slippage exploit during rescue** → KeeperHub dry-run step with circuit breaker on slippage delta.
-- **Compromised watchdog key** → 2-of-3 threshold + ERC-8004 reputation slashing.
-
-## Positioning
-
-Not an agent marketplace (Olas, Virtuals, Fetch.ai). Not an agentic wallet (Coinbase, Openfort, Human.tech). Not a Safe dead-man's switch (timer-based). **The failure attestation layer + rescue orchestration primitive that every onchain agent needs when it dies.**
+- **Compromised watchdog key** → 2-of-3 threshold + ERC-8004 reputation slashing in `AgentIdentityRegistry`.
 
 ## Docs
 
-- `<internal>` — 30-idea ideation + scoring rubric
-- `<internal>` — 5-round codex debate log
-- `<internal>` — architecture + 10-day plan
-- `<internal>` — Day 1 first-4-hour runbook + realistic timing
-- `<internal>` — 3-minute demo script
+- [<internal>](./<internal>) — 30-idea ideation + scoring rubric
+- [<internal>](./<internal>) — 6-round codex debate that landed us on this idea
+- [<internal>](./<internal>) — architecture deep dive + 10-day plan
+- [<internal>](./<internal>) — Day 1 first-4-hour runbook + realistic timing
+- [<internal>](./<internal>) — 3-minute demo video script
+- [<internal>](./<internal>) — 8-panel cartoon for non-crypto audiences
+- [<internal>](./<internal>) — sponsor-platform feedback (Uniswap, KeeperHub, Gensyn, ENS, 0G)
 
 ## Credits
 
-Iterated with [OpenAI Codex CLI](https://github.com/openai/codex) across five red-team rounds. Original ideation by [Claude Opus 4.7](https://claude.com/claude-code).
+Iterated with [OpenAI Codex CLI](https://github.com/openai/codex) across multiple adversarial review rounds. Implementation by [Claude Opus 4.7](https://claude.com/claude-code) on a <vps> VPS.
