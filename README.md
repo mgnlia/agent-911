@@ -1,4 +1,4 @@
-# Agent Airbag × WatchdogQuorum
+# Agent-911 × WatchdogQuorum
 
 > **The primitive:** Autonomous agents need an external failure oracle. WatchdogQuorum lets independent agents attest that another agent is unhealthy, then triggers a preauthorized recovery action.
 >
@@ -10,15 +10,15 @@ Built for **ETHGlobal OpenAgents** (Apr 24 – May 3, 2026).
 
 In February 2026, an AI agent cascade triggered **$400M in liquidations** as autonomous trading agents simultaneously exited positions. 40% of on-chain transactions are now initiated by agents. Agentic wallets solve the *intent* problem (spending caps, whitelists, human leashes). None solve the **post-crash problem**: when an agent itself dies, hangs, or misses a liquidation window, funds are stranded in positions that were only safe while the agent was healthy.
 
-A dead-man's-switch Safe module can't solve this either — it's timer-based. Agent Airbag is *observer-based* with a *contextual runbook*.
+A dead-man's-switch Safe module can't solve this either — it's timer-based. Agent-911 is *observer-based* with a *contextual runbook*.
 
 ## How it works
 
-1. Before the agent starts, it registers a vault (`AirbagVault`), a content-addressed runbook on **0G Storage**, and three independent watchdog agents on **separate AXL nodes** with ENS subnames (`main.airbag.eth`, `watchdog-{1,2,3}.airbag.eth`).
+1. Before the agent starts, it registers a vault (`Agent911Vault`), a content-addressed runbook on **0G Storage**, and three independent watchdog agents on **separate AXL nodes** with ENS subnames (`main.agent911.eth`, `watchdog-{1,2,3}.agent911.eth`).
 2. Each watchdog monitors heartbeat independently.
 3. On silence, each signs an EIP-712 `FailureAttestation`.
 4. Two of three signatures bundled into `confirmFailure(policyId, sigs[])` → **`WatchdogQuorum.sol`** emits `FailureConfirmed`.
-5. **KeeperHub** (pre-warmed webhook) executes `AirbagVault.rescue(policyId)` — exit position, swap to USDC via **Uniswap**, transfer to safe address.
+5. **KeeperHub** (pre-warmed webhook) executes `Agent911Vault.rescue(policyId)` — exit position, swap to USDC via **Uniswap**, transfer to safe address.
 6. Receipt stored on 0G Storage for audit.
 
 ```
@@ -32,7 +32,7 @@ Main agent (dies) ──heartbeat──► 3 Watchdogs on separate AXL nodes
                             KeeperHub (guaranteed exec)
                                         │
                                         ▼
-                               AirbagVault.rescue() ──► Uniswap swap ──► safe.airbag.eth
+                               Agent911Vault.rescue() ──► Uniswap swap ──► safe.agent911.eth
 ```
 
 ## Sponsor stack
@@ -41,12 +41,12 @@ Main agent (dies) ──heartbeat──► 3 Watchdogs on separate AXL nodes
 |---|---|---|
 | **0G Storage** | Runbook + encrypted policy metadata | Can't live in the dying agent. |
 | **0G Compute (sealed)** | TEE executor decrypts runbook, emits signed `RescuePlan` | Private decision logic can't be front-run. |
-| **0G Chain** | `WatchdogQuorum` + `AirbagVault` + `AirbagPolicyNFT` | EVM, fast finality. |
+| **0G Chain** | `WatchdogQuorum` + `Agent911Vault` + `Agent911PolicyNFT` | EVM, fast finality. |
 | **Gensyn AXL** | Three watchdog binaries on distinct ports | Watchdogs on same host die with agent — definitional separation. |
 | **KeeperHub** | Guaranteed rescue execution after quorum | Core value prop; without guarantee, rescue can be dropped. |
 | **Uniswap** | Swap exit-position → USDC | Universal rescue route. `<internal>` included. |
 | **ENS** | Subnames for every agent | First-class identifier in ERC-8004 registry. |
-| **ERC-7857** | `AirbagPolicyNFT` | Policy is transferable/tradeable insurance product. |
+| **ERC-7857** | `Agent911PolicyNFT` | Policy is transferable/tradeable insurance product. |
 | **ERC-8004** | Agent identity + reputation | New Ethereum standard (mainnet Jan 29, 2026). |
 
 ## Running the demo
@@ -64,7 +64,7 @@ pnpm demo:reset
 
 ## Layout
 
-- `contracts/` — `WatchdogQuorum.sol`, `AirbagVault.sol`, `AirbagPolicyNFT.sol`
+- `contracts/` — `WatchdogQuorum.sol`, `Agent911Vault.sol`, `Agent911PolicyNFT.sol`
 - `agents/` — `main-agent.ts`, `watchdog-node-{1,2,3}.ts`, `rescue-executor.ts`
 - `lib/` — `axl.ts`, `keeperhub.ts`, `zeroGStorage.ts`, `uniswap.ts`
 - `scripts/` — `spike-rescue.ts`, `seed-position.ts`, `demo-{start,kill-agent,reset}.ts`
@@ -76,7 +76,7 @@ pnpm demo:reset
 
 - **False positive** → require per-watchdog observation source; reject quorum if all three RPC endpoints match.
 - **Correlated observation** → watchdog attestation includes RPC fingerprint.
-- **Stale runbook** → TTL + version hash enforced in `AirbagVault.rescue`.
+- **Stale runbook** → TTL + version hash enforced in `Agent911Vault.rescue`.
 - **Slippage exploit during rescue** → KeeperHub dry-run step with circuit breaker on slippage delta.
 - **Compromised watchdog key** → 2-of-3 threshold + ERC-8004 reputation slashing.
 
