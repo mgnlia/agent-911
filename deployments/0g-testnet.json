@@ -1,0 +1,19 @@
+{
+  "chainId": 16602,
+  "chainName": "0G Testnet (Galileo)",
+  "rpcUrl": "https://evmrpc-testnet.0g.ai",
+  "deployer": "0xa64ed1bd9D75338f65F8E1d65b58330D9A4E0091",
+  "deployedAt": "2026-04-25T00:00:00Z",
+  "commit": "a90899e",
+  "contracts": {
+    "WatchdogQuorum":    "0x005319a89579eFA98abf167fd9C471AAFD14ef93",
+    "Agent911PolicyNFT": "0xfc982634E1555Bfc73B5BAc8Ff0264e4e42aa940",
+    "Agent911Vault":     "0x048368Ad21cb18CCfe35532049831F6591098ce6",
+    "MockERC20_mUSDC":   "0xA470fe8611990DeB0760F481f30C9F4DB4755ba0"
+  },
+  "notes": [
+    "0G testnet RPC returned null responses on tx receipt lookup — use `--skip-simulation --legacy` for redeploys, and verify via `cast code <addr>`.",
+    "Deploy.s.sol minted 1_000_000 mUSDC to the deployer on launch.",
+    "Gas is paid in 0G (chain 16602)."
+  ]
+}

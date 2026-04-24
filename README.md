@@ -129,10 +129,21 @@ pnpm exec tsx scripts/axl-smoke.ts  # 3-node topology + send/recv roundtrip
 
 ```bash
 cp .env.example .env          # fill in PRIVATE_KEY etc.
-pnpm deploy:0g                # 0G testnet
+pnpm deploy:0g                # 0G testnet (chain 16602)
 ```
 
-Testnet deployer: `0xa64ed1bd9D75338f65F8E1d65b58330D9A4E0091` — fund via https://faucet.0g.ai before deploy.
+### Live on 0G Testnet (Galileo, chain 16602)
+
+| Contract | Address |
+|---|---|
+| `WatchdogQuorum` | [`0x005319a89579eFA98abf167fd9C471AAFD14ef93`](https://chainscan-galileo.0g.ai/address/0x005319a89579eFA98abf167fd9C471AAFD14ef93) |
+| `Agent911PolicyNFT` | [`0xfc982634E1555Bfc73B5BAc8Ff0264e4e42aa940`](https://chainscan-galileo.0g.ai/address/0xfc982634E1555Bfc73B5BAc8Ff0264e4e42aa940) |
+| `Agent911Vault` | [`0x048368Ad21cb18CCfe35532049831F6591098ce6`](https://chainscan-galileo.0g.ai/address/0x048368Ad21cb18CCfe35532049831F6591098ce6) |
+| `MockERC20 (mUSDC)` | [`0xA470fe8611990DeB0760F481f30C9F4DB4755ba0`](https://chainscan-galileo.0g.ai/address/0xA470fe8611990DeB0760F481f30C9F4DB4755ba0) |
+
+Full deployment record: [`deployments/0g-testnet.json`](./deployments/0g-testnet.json).
+
+Deployer: `0xa64ed1bd9D75338f65F8E1d65b58330D9A4E0091` (testnet-only throwaway; fund via https://faucet.0g.ai or the [OpenAgents Telegram support channel](https://t.me/+mQmldXXVBGpkODU1)).
 
 ## Project layout
 
