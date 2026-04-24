@@ -20,7 +20,7 @@ contract AgentIdentityRegistry is ERC721 {
 
     struct AgentCard {
         string  uri;       // https://... or ipfs://... or 0g://...
-        string  ensName;   // e.g. watchdog-1.agent911.eth
+        string  ensName;   // e.g. watchdog-1.agent-911.eth
         address operator;  // hot wallet that actually signs for this agent
     }
 

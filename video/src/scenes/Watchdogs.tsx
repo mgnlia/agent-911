@@ -8,9 +8,9 @@ export const Watchdogs: React.FC = () => {
 
   // Stagger each watchdog signing
   const stages: {id: string; pk: string; at: number}[] = [
-    {id: 'watchdog-1.agent911.eth', pk: '93c58b52…', at: 30},
-    {id: 'watchdog-2.agent911.eth', pk: '77d8778f…', at: 60},
-    {id: 'watchdog-3.agent911.eth', pk: '76698971…', at: 90},
+    {id: 'watchdog-1.agent-911.eth', pk: '93c58b52…', at: 30},
+    {id: 'watchdog-2.agent-911.eth', pk: '77d8778f…', at: 60},
+    {id: 'watchdog-3.agent-911.eth', pk: '76698971…', at: 90},
   ];
 
   const signed = stages.map((s) => frame >= s.at);

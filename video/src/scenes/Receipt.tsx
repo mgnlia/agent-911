@@ -10,7 +10,7 @@ export const Receipt: React.FC = () => {
   const cardScale = interpolate(card, [0, 1], [0.94, 1]);
 
   const rows: [string, React.ReactNode][] = [
-    ['dead agent',       <span style={{color: theme.dead}}>main.agent911.eth</span>],
+    ['dead agent',       <span style={{color: theme.dead}}>main.agent-911.eth</span>],
     ['quorum',           <span style={{color: theme.live}}>watchdog-1 + watchdog-2 (2 / 3)</span>],
     ['0G runbook hash',  <span style={{fontFamily: mono}}>0xbc9e61cf…</span>],
     ['FailureConfirmed', <span style={{fontFamily: mono}}>0xa74b14fd…  block 29,566,814</span>],

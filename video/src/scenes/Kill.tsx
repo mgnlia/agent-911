@@ -6,7 +6,7 @@ export const Kill: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
 
-  const typedCmd = 'kill -9 main.agent911.eth';
+  const typedCmd = 'kill -9 main.agent-911.eth';
   const typeProgress = interpolate(frame, [10, 60], [0, typedCmd.length], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',

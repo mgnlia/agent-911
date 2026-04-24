@@ -1,7 +1,7 @@
 import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
 import {mono, sans, theme} from '../theme';
 
-/** Scene 8 — sponsor stack callout. 5 rows appearing in sequence. */
+/** Scene 8 — sponsor stack callout. 6 rows appearing in sequence. */
 export const Stack: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
@@ -11,6 +11,7 @@ export const Stack: React.FC = () => {
     {name: 'Gensyn',   role: 'AXL mesh — 3 distinct Yggdrasil peer ids, attestations over /send /recv',         color: '#d27bff'},
     {name: 'KeeperHub',role: 'guaranteed rescue — only executes after onchain quorum + runbook hash match',     color: '#ffbb33'},
     {name: 'Uniswap',  role: 'v3 SwapRouter exactInputSingle — optional exit-to-USDC rescue path',              color: '#ff69b4'},
+    {name: 'ENS',      role: 'agent-911.eth — every actor carries a human-readable subname onchain',             color: '#7fd1ff'},
     {name: 'ERC-7857', role: 'Agent911PolicyNFT — owner controls safe; transfer-NFT-changes-rescue',             color: theme.live},
   ];
 

@@ -34,7 +34,7 @@ interface Args {
 function parse(): Args {
   const { values } = parseArgs({
     options: {
-      "watchdog-id":       { type: "string", default: "watchdog-1.agent911.eth" },
+      "watchdog-id":       { type: "string", default: "watchdog-1.agent-911.eth" },
       "private-key":       { type: "string" },
       "heartbeat-path":    { type: "string", default: "/tmp/agent-911/heartbeat.json" },
       "attestation-dir":   { type: "string", default: "/tmp/agent-911/attestations" },

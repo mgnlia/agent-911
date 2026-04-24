@@ -4,7 +4,7 @@
  *
  * Usage:
  *   tsx agents/main-agent.ts \
- *     --agent-id main.agent911.eth \
+ *     --agent-id main.agent-911.eth \
  *     --heartbeat-path /tmp/agent-911/heartbeat.json \
  *     --interval-ms 2000
  *
@@ -25,7 +25,7 @@ interface Args {
 function parse(): Args {
   const { values } = parseArgs({
     options: {
-      "agent-id":       { type: "string", default: "main.agent911.eth" },
+      "agent-id":       { type: "string", default: "main.agent-911.eth" },
       "heartbeat-path": { type: "string", default: "/tmp/agent-911/heartbeat.json" },
       "interval-ms":    { type: "string", default: "2000" },
     },

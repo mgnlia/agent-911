@@ -14,12 +14,12 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_Register() public {
-        uint256 tokenId = reg.registerAgent(ALICE, "https://alice.example/card.json", "alice.agent911.eth", ALICE);
+        uint256 tokenId = reg.registerAgent(ALICE, "https://alice.example/card.json", "alice.agent-911.eth", ALICE);
         assertEq(reg.ownerOf(tokenId), ALICE);
 
         AgentIdentityRegistry.AgentCard memory card = reg.agentOf(tokenId);
         assertEq(card.uri, "https://alice.example/card.json");
-        assertEq(card.ensName, "alice.agent911.eth");
+        assertEq(card.ensName, "alice.agent-911.eth");
         assertEq(card.operator, ALICE);
     }
 

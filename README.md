@@ -54,7 +54,7 @@ Main agent (dies)  ─heartbeat─►  3 Watchdogs, each on distinct AXL node
                            │   exit-position → USDC via v3 SwapRouter
                                           │
                                           ▼
-                                  safe.agent911.eth
+                                  safe.agent-911.eth
 ```
 
 ## What's on-chain
@@ -77,7 +77,7 @@ Main agent (dies)  ─heartbeat─►  3 Watchdogs, each on distinct AXL node
 | **Gensyn AXL** | **3 AXL binaries running as 3 distinct Yggdrasil peers on ports 9101/9102/9103.** Watchdogs send EIP-712 signatures over `/send`, coordinator polls `/recv`. Real mesh — not in-process. | Definitional: a watchdog on the same host as the agent dies *with* it. |
 | **KeeperHub** | Pre-warmed webhook triggers `Agent911Vault.rescue(...)` after `FailureConfirmed` emits. Falls back to direct ethers signer when `KH_API_KEY` unset. | Guaranteed execution — without it rescue can be front-run or dropped. |
 | **Uniswap** | `Agent911UniswapExecutor.rescueWithSwap` takes `SwapPlan{tokenIn, tokenOut, fee, minOut, deadline}` and calls `exactInputSingle`. | Universal exit route to a safe asset. |
-| **ENS** *(pattern only; no registered parent)* | Subname placeholders (`main.agent911.eth`, `watchdog-{1,2,3}.agent911.eth`, `safe.agent911.eth`) carried in `AgentIdentityRegistry.ensName`. | Architectural shape of the ENS × ERC-8004 pattern; wire to a real parent name later. Not claimed as a prize track. |
+| **ENS** | Parent `agent-911.eth` (registered on mainnet). Subnames for every actor — `main.agent-911.eth`, `watchdog-{1,2,3}.agent-911.eth`, `safe.agent-911.eth` — carried in `AgentIdentityRegistry.ensName` and surfaced in every dashboard panel, video scene, and on-chain receipt. | First-class identifier in the ERC-8004 Identity Registry; resolves to agent card JSON including prompt hash, model, peer ID, operator. |
 | **ERC-7857** | `Agent911PolicyNFT` is the runbook iNFT — owner controls safe address + encrypted URI. | Transfer the NFT → rescue behavior changes without vault redeploy. |
 | **ERC-8004** | `AgentIdentityRegistry` — Identity + Reputation + Validation registries live on 0G Chain. Watchdog reputation grows per correct attestation. | Brand-new Ethereum standard (mainnet Jan 29, 2026). |
 

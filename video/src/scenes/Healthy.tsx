@@ -39,7 +39,7 @@ export const Healthy: React.FC = () => {
 
       <div style={{display: 'flex', gap: 24, height: 560}}>
         <Panel title="The Agent">
-          <KV k="name" v={<span style={{color: theme.accent}}>main.agent911.eth</span>} />
+          <KV k="name" v={<span style={{color: theme.accent}}>main.agent-911.eth</span>} />
           <KV k="status" v={<span style={{color: theme.live, fontWeight: 700}}>LIVE</span>} />
           <KV k="heartbeat" v={<span>#{counter}</span>} />
           <KV k="last seen" v={<span>0 ms</span>} />
@@ -63,7 +63,7 @@ export const Healthy: React.FC = () => {
         <Panel title="Watchdog Quorum (2-of-3 via AXL)">
           {['watchdog-1', 'watchdog-2', 'watchdog-3'].map((id, i) => (
             <div key={id} style={{padding: '12px 14px', background: '#20242e', borderRadius: 8, marginBottom: 10, display: 'flex', justifyContent: 'space-between', fontFamily: mono, fontSize: 20}}>
-              <span style={{color: theme.accent}}>{id}.agent911.eth</span>
+              <span style={{color: theme.accent}}>{id}.agent-911.eth</span>
               <span style={{color: theme.muted, fontSize: 14, padding: '2px 10px', background: '#2d2f37', borderRadius: 4}}>pending</span>
             </div>
           ))}
@@ -75,7 +75,7 @@ export const Healthy: React.FC = () => {
         <Panel title="Vault">
           <KV k="vault" v={<span style={{color: theme.accent}}>Agent911Vault</span>} />
           <KV k="holds" v={<span style={{color: theme.fg, fontWeight: 700}}>10,000 mUSDC</span>} />
-          <KV k="safe" v={<span style={{color: theme.accent}}>safe.agent911.eth</span>} />
+          <KV k="safe" v={<span style={{color: theme.accent}}>safe.agent-911.eth</span>} />
           <KV k="safe bal" v={<span style={{color: theme.muted}}>0 mUSDC</span>} />
         </Panel>
       </div>

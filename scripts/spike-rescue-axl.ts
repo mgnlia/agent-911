@@ -29,9 +29,9 @@ const HEARTBEAT_PATH = join(STATE_DIR, "heartbeat.json");
 const DEPLOYER_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const ALICE_PK    = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const WATCHDOGS = [
-  { id: "watchdog-1.agent911.eth", pk: "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a", axl: "http://127.0.0.1:9101" },
-  { id: "watchdog-2.agent911.eth", pk: "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6", axl: "http://127.0.0.1:9102" },
-  { id: "watchdog-3.agent911.eth", pk: "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", axl: "http://127.0.0.1:9103" },
+  { id: "watchdog-1.agent-911.eth", pk: "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a", axl: "http://127.0.0.1:9101" },
+  { id: "watchdog-2.agent-911.eth", pk: "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6", axl: "http://127.0.0.1:9102" },
+  { id: "watchdog-3.agent-911.eth", pk: "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", axl: "http://127.0.0.1:9103" },
 ];
 const SAFE_ADDR = "0x000000000000000000000000000000005AFE5AFE";
 
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
   // Launch main-agent
   const mainAgent = startProc("main-agent", "tsx", [
     "agents/main-agent.ts",
-    "--agent-id", "main.agent911.eth",
+    "--agent-id", "main.agent-911.eth",
     "--heartbeat-path", HEARTBEAT_PATH,
     "--interval-ms", "1000",
   ]);
