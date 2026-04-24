@@ -16,7 +16,11 @@
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { JsonRpcProvider, Wallet, Contract, ContractFactory, keccak256, toUtf8Bytes, parseUnits } from "ethers";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { JsonRpcProvider, Wallet, Contract as _Contract, ContractFactory, keccak256, toUtf8Bytes, parseUnits } from "ethers";
+// ethers v6 Contract has Proxy-typed methods; cast to any for script convenience
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Contract = _Contract as any;
 
 import { abi, bytecode } from "../lib/contracts.ts";
 

@@ -11,9 +11,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
 const OUT_DIR    = join(__dirname, "..", "out");
 
-export function abi(contract: string): unknown[] {
+// Ethers v6 InterfaceAbi accepts JsonFragment[] / string[] / Fragment[].
+// Foundry artifacts give us a JsonFragment[] directly; we type it loosely
+// because enumerating every Fragment shape isn't worth the cycles here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type LooseAbi = any[];
+
+export function abi(contract: string): LooseAbi {
   const artifact = JSON.parse(readFileSync(join(OUT_DIR, `${contract}.sol`, `${contract}.json`), "utf8"));
-  return artifact.abi as unknown[];
+  return artifact.abi as LooseAbi;
 }
 
 export function bytecode(contract: string): `0x${string}` {
