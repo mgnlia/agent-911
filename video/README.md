@@ -2,7 +2,7 @@
 
 A [Remotion](https://remotion.dev) project that renders the 70-second Agent-911 explainer straight from TypeScript. No screen-recording, no mouse movement — each frame is deterministic, so the video can be re-rendered verbatim from source.
 
-The output is at [`out/agent-911.mp4`](./out/agent-911.mp4) — 1920×1080, 30 fps, 70s, ~6.6 MB.
+The output is at [`out/agent-911.mp4`](./out/agent-911.mp4) — 1920×1080, 30 fps, ~79s, ~7.3 MB, with **synthesized narration** across every scene.
 
 ## Scene breakdown
 
@@ -23,9 +23,18 @@ The output is at [`out/agent-911.mp4`](./out/agent-911.mp4) — 1920×1080, 30 f
 ```bash
 cd video
 pnpm install
-pnpm dev       # open Remotion Studio for iteration
-pnpm build     # render to out/agent-911.mp4
+pnpm narration   # (optional) regenerate all mp3s via edge-tts
+pnpm dev         # open Remotion Studio for iteration
+pnpm build       # render to out/agent-911.mp4
 ```
+
+### Narration
+
+- Uses [`edge-tts`](https://pypi.org/project/edge-tts/) — free Microsoft Neural voices, no API key.
+- One `.mp3` per scene in `public/narration/` (title, problem, healthy, kill, watchdogs, rescue, receipt, stack, outro).
+- Voice defaults to `en-US-GuyNeural` at `+8%` rate. Override with `VOICE=en-US-AriaNeural RATE=+5% pnpm narration:regen`.
+- Text lives in `scripts/generate-narration.mjs`. Edit + `pnpm narration:regen` to update.
+- Remotion mounts each mp3 inside its scene's `Series.Sequence` via `<Audio src={staticFile('narration/<id>.mp3')}>`, so each track's local frame resets at the scene cut.
 
 ## Tweaking
 

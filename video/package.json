@@ -5,6 +5,8 @@
   "description": "Remotion video for Agent-911 demo",
   "scripts": {
     "dev": "remotion studio",
+    "narration": "node scripts/generate-narration.mjs",
+    "narration:regen": "REGEN=1 node scripts/generate-narration.mjs",
     "build": "remotion render agent911 out/agent-911.mp4 --codec=h264"
   },
   "dependencies": {
