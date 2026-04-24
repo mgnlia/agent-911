@@ -187,7 +187,7 @@ infra
 
 ## Measured rescue timing
 
-From `spike:axl` on anvil (2s block time):
+### Local (anvil, 2s block time) — `pnpm spike:axl`
 
 | Segment | Time |
 |---|---:|
@@ -195,7 +195,26 @@ From `spike:axl` on anvil (2s block time):
 | Kill → `FailureConfirmed` onchain | ~9.4s |
 | Kill → funds at safe | ~13.5s |
 
-Realistic public-infrastructure budget (from our red-team analysis in [<internal>](./<internal>)): 30s optimistic / 98s realistic / 2-5 min in the bad case. We pre-warm the KeeperHub webhook and bundle all attestations into one quorum tx to stay under 1 minute.
+### Live on 0G testnet — `pnpm demo:live` ([summary](./deployments/live-run.json))
+
+| Segment | Time |
+|---|---:|
+| Kill → 3/3 attestations via AXL mesh | **5.48s** |
+| Kill → `FailureConfirmed` on 0G | **13.11s** |
+| Kill → funds at safe on 0G | **20.51s** |
+
+Live-run transaction hashes (all on [chainscan-galileo](https://chainscan-galileo.0g.ai)):
+
+| Step | Tx hash |
+|---|---|
+| `mintPolicy` | [`0xe5342fb4…`](https://chainscan-galileo.0g.ai/tx/0xe5342fb4519278804892ef1d78dd8451f0188ff533ae7c4cea3a5c9559c3fae4) |
+| `bindPolicy` | [`0x19db435f…`](https://chainscan-galileo.0g.ai/tx/0x19db435f43bc89f295244fe2e50ef8d1fa7480e656c6e8d362ab7942bb03de53) |
+| `registerPolicy` | [`0x5673746f…`](https://chainscan-galileo.0g.ai/tx/0x5673746f898a009b921cee297d1e094c0e19b9251f103d613e513ddbebddcd08) |
+| `deposit` | [`0x9d25a882…`](https://chainscan-galileo.0g.ai/tx/0x9d25a882d54d28d483715356de60a7bfd354ef5fbb4ec46791d2121586a455cf) |
+| **`confirmFailure`** (block 29,566,814) | [`0xa74b14fd…`](https://chainscan-galileo.0g.ai/tx/0xa74b14fdb25d9a9052262e1d31652a5362e6dee13e6dd36bac761cbb497d5799) |
+| **`rescue`** (block 29,566,831) | [`0x52d85cb6…`](https://chainscan-galileo.0g.ai/tx/0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2) |
+
+Realistic public-infrastructure budget (from our red-team analysis in [<internal>](./<internal>)): 30s optimistic / 98s realistic / 2-5 min in the bad case. We pre-warm the KeeperHub webhook and bundle all attestations into one quorum tx — measured at **~21s** on live 0G testnet.
 
 ## Known failure modes (not hidden)
 

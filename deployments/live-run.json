@@ -1,0 +1,67 @@
+{
+  "chainId": 16602,
+  "explorer": "https://chainscan-galileo.0g.ai",
+  "policyId": "0x3a6735f5de1c49e50144cb32024d54c74e593c2a303b0ec97925fdc7533d0b44",
+  "runbook": {
+    "uri": "file:///tmp/agent-911/runbook-store/bc9e61cfe9581f2f1f93ea9aee6439b130234f87ced1294adb2597a3677a5a9a.bin",
+    "metadataHash": "0xbc9e61cfe9581f2f1f93ea9aee6439b130234f87ced1294adb2597a3677a5a9a"
+  },
+  "tokenId": "1",
+  "safeAddress": "0x5afe5afe5afe5afe5afe5afe5afe5afe5afe5afe",
+  "watchdogs": [
+    {
+      "id": "watchdog-1.agent911.eth",
+      "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    },
+    {
+      "id": "watchdog-2.agent911.eth",
+      "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+    },
+    {
+      "id": "watchdog-3.agent911.eth",
+      "address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+    }
+  ],
+  "timings": {
+    "killToAttMs": 5481,
+    "killToConfirmedMs": 13113,
+    "killToSafeMs": 20512
+  },
+  "transactions": {
+    "mintPolicy": {
+      "hash": "0xe5342fb4519278804892ef1d78dd8451f0188ff533ae7c4cea3a5c9559c3fae4",
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0xe5342fb4519278804892ef1d78dd8451f0188ff533ae7c4cea3a5c9559c3fae4"
+    },
+    "bindPolicy": {
+      "hash": "0x19db435f43bc89f295244fe2e50ef8d1fa7480e656c6e8d362ab7942bb03de53",
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0x19db435f43bc89f295244fe2e50ef8d1fa7480e656c6e8d362ab7942bb03de53"
+    },
+    "registerPolicy": {
+      "hash": "0x5673746f898a009b921cee297d1e094c0e19b9251f103d613e513ddbebddcd08",
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0x5673746f898a009b921cee297d1e094c0e19b9251f103d613e513ddbebddcd08"
+    },
+    "approve": {
+      "hash": "0x93dd6804e0e0f982da6d988e32766dbeb1403a5b9950b3803d4237da9f94f4a7",
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0x93dd6804e0e0f982da6d988e32766dbeb1403a5b9950b3803d4237da9f94f4a7"
+    },
+    "deposit": {
+      "hash": "0x9d25a882d54d28d483715356de60a7bfd354ef5fbb4ec46791d2121586a455cf",
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0x9d25a882d54d28d483715356de60a7bfd354ef5fbb4ec46791d2121586a455cf"
+    },
+    "confirmFailure": {
+      "hash": "0xa74b14fdb25d9a9052262e1d31652a5362e6dee13e6dd36bac761cbb497d5799",
+      "blockNumber": 29566814,
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0xa74b14fdb25d9a9052262e1d31652a5362e6dee13e6dd36bac761cbb497d5799"
+    },
+    "rescue": {
+      "hash": "0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2",
+      "blockNumber": 29566831,
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2"
+    }
+  },
+  "finalBalances": {
+    "safe": "1000000000",
+    "vault": "0"
+  },
+  "ranAt": "2026-04-24T16:44:07.139Z"
+}
