@@ -21,7 +21,7 @@
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
-import { JsonRpcProvider, Contract as _Contract, id as topicId } from "ethers";
+import { JsonRpcProvider, Wallet, Contract as _Contract, id as topicId } from "ethers";
 import { abi } from "../lib/contracts.ts";
 import { AxlClient } from "../lib/axl.ts";
 import { heartbeatAgeMs } from "../lib/heartbeat-bus.ts";
@@ -39,6 +39,8 @@ const POLICY_ID      = (process.env.DEMO_POLICY_ID  ?? "") as `0x${string}`;
 const SAFE_ADDR      = process.env.DEMO_SAFE_ADDR   ?? "";
 const HEARTBEAT_PATH = process.env.DEMO_HEARTBEAT   ?? "/tmp/agent-911/heartbeat.json";
 const COORD_AXL      = process.env.DEMO_COORD_AXL   ?? "http://127.0.0.1:9101";
+const COORD_PK       = process.env.DEMO_COORD_PK    ?? "";
+const THRESHOLD      = parseInt(process.env.DEMO_THRESHOLD ?? "2", 10);
 
 // --- in-memory broadcast ---
 type Client = { res: ServerResponse };
@@ -89,16 +91,63 @@ async function heartbeatLoop(): Promise<void> {
   }
 }
 
+interface CollectedAtt {
+  watchdogId: string;
+  observedAt: bigint;
+  expiry: bigint;
+  signature: `0x${string}`;
+}
+
 async function axlInboxLoop(): Promise<void> {
   const cli = new AxlClient({ apiUrl: COORD_AXL });
+  const atts = new Map<string, CollectedAtt>();
+  let submitted = false;
+
   while (true) {
     try {
       const msg = await cli.recvJson<Record<string, unknown>>();
       if (msg && typeof msg.payload === "object" && msg.payload !== null && (msg.payload as { kind?: string }).kind === "Agent911.FailureAttestation") {
+        const p = msg.payload as {
+          watchdogId: string; observedAt: number; expiry: number;
+          signature: `0x${string}`; policyId: `0x${string}`;
+        };
+
         emit("attestation", {
-          fromPeer: msg.fromPeerId.slice(0, 16),
-          watchdogId: (msg.payload as { watchdogId: string }).watchdogId,
+          fromPeer:   msg.fromPeerId.slice(0, 16),
+          watchdogId: p.watchdogId,
         });
+
+        if (!atts.has(p.watchdogId) && p.policyId === POLICY_ID) {
+          atts.set(p.watchdogId, {
+            watchdogId: p.watchdogId,
+            observedAt: BigInt(p.observedAt),
+            expiry:     BigInt(p.expiry),
+            signature:  p.signature,
+          });
+        }
+
+        if (!submitted && atts.size >= THRESHOLD && COORD_PK && QUORUM_ADDR && VAULT_ADDR && USDC_ADDR) {
+          submitted = true;
+          try {
+            const provider = new JsonRpcProvider(RPC_URL);
+            const signer   = new Wallet(COORD_PK, provider);
+            const bundle = Array.from(atts.values()).map(a => ({
+              observedAt: a.observedAt, expiry: a.expiry, signature: a.signature,
+            }));
+
+            const quorum = new Contract(QUORUM_ADDR, abi("WatchdogQuorum"), signer);
+            const txC = await quorum.confirmFailure(POLICY_ID, bundle);
+            emit("coord_submitting", { step: "confirmFailure", hash: txC.hash });
+            await txC.wait();
+
+            const vault = new Contract(VAULT_ADDR, abi("Agent911Vault"), signer);
+            const txR = await vault.rescue(POLICY_ID, USDC_ADDR);
+            emit("coord_submitting", { step: "rescue", hash: txR.hash });
+            await txR.wait();
+          } catch (err) {
+            emit("coord_error", { error: String(err) });
+          }
+        }
       }
     } catch { /* axl blip */ }
     await new Promise(r => setTimeout(r, 250));

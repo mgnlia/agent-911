@@ -163,17 +163,22 @@ async function main(): Promise<void> {
     ]));
   }
 
-  // --- 6. event bus + dashboard ---
+  // --- 6. event bus + dashboard + coordinator (single process) ---
+  // event-bus is both the SSE broadcaster AND the coordinator: it polls the
+  // coord AXL node's /recv inbox once, emits 'attestation' events for the UI,
+  // and submits confirmFailure + rescue when the threshold is met.
   const eventBus = startProc("event-bus", "tsx", ["scripts/event-bus.ts"], {
-    DEMO_RPC_URL:      RPC_URL,
-    DEMO_QUORUM_ADDR:  addresses.quorum,
-    DEMO_VAULT_ADDR:   addresses.vault,
-    DEMO_NFT_ADDR:     addresses.nft,
-    DEMO_USDC_ADDR:    addresses.usdc,
-    DEMO_POLICY_ID:    POLICY_ID,
-    DEMO_SAFE_ADDR:    SAFE_ADDR,
-    DEMO_HEARTBEAT:    HEARTBEAT_PATH,
-    DEMO_COORD_AXL:    WATCHDOGS[0]!.axl,
+    DEMO_RPC_URL:       RPC_URL,
+    DEMO_QUORUM_ADDR:   addresses.quorum,
+    DEMO_VAULT_ADDR:    addresses.vault,
+    DEMO_NFT_ADDR:      addresses.nft,
+    DEMO_USDC_ADDR:     addresses.usdc,
+    DEMO_POLICY_ID:     POLICY_ID,
+    DEMO_SAFE_ADDR:     SAFE_ADDR,
+    DEMO_HEARTBEAT:     HEARTBEAT_PATH,
+    DEMO_COORD_AXL:     WATCHDOGS[0]!.axl,
+    DEMO_COORD_PK:      DEPLOYER_PK,
+    DEMO_THRESHOLD:     "2",
   });
 
   // --- 7. persist state ---
