@@ -70,10 +70,12 @@ function resetState(): void {
   mkdirSync(ATTEST_DIR, { recursive: true });
 }
 
-function startProc(label: string, cmd: string, args: string[], logPath?: string): ChildProcess {
+function startProc(label: string, cmd: string, args: string[]): ChildProcess {
+  // detached:true gives the child its own process group; we kill the *group* so
+  // that tsx's shell wrapper + node child both die together on SIGKILL.
   const p = spawn(cmd, args, {
     stdio: ["ignore", "pipe", "pipe"],
-    detached: false,
+    detached: true,
   });
   if (p.stdout) p.stdout.on("data", (d) => process.stdout.write(`[${label}] ${d}`));
   if (p.stderr) p.stderr.on("data", (d) => process.stderr.write(`[${label}!] ${d}`));
@@ -81,6 +83,17 @@ function startProc(label: string, cmd: string, args: string[], logPath?: string)
     process.stderr.write(`[${label}] exited code=${code} sig=${sig}\n`);
   });
   return p;
+}
+
+function killGroup(p: ChildProcess, signal: NodeJS.Signals = "SIGTERM"): void {
+  if (!p.pid) return;
+  try {
+    // Negative PID kills the entire process group (POSIX)
+    process.kill(-p.pid, signal);
+  } catch {
+    // Fallback: kill just the direct child (best effort)
+    try { p.kill(signal); } catch { /* already gone */ }
+  }
 }
 
 async function waitForAllAttestations(dir: string, expectedCount: number, timeoutMs = 30_000): Promise<string[]> {
@@ -217,7 +230,7 @@ async function main(): Promise<void> {
   console.log("[spike] KILL -9 main-agent");
   console.log("============================\n");
   const killT0 = Date.now();
-  mainAgent.kill("SIGKILL");
+  killGroup(mainAgent, "SIGKILL");
 
   // 8. Wait for all 3 attestations to show up
   const attFiles = await waitForAllAttestations(ATTEST_DIR, 3, 20_000);
@@ -265,8 +278,8 @@ async function main(): Promise<void> {
   console.log(`total spike runtime    : ${elapsed}ms`);
 
   // Clean up
-  for (const w of watchdogProcs) w.kill("SIGTERM");
-  anvil.kill("SIGTERM");
+  for (const w of watchdogProcs) killGroup(w, "SIGTERM");
+  killGroup(anvil, "SIGTERM");
 
   // Give processes a moment to exit
   await new Promise((r) => setTimeout(r, 500));
