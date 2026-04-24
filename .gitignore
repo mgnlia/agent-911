@@ -3,6 +3,10 @@ cache/
 out/
 broadcast/
 
+# Allow the rendered demo video specifically
+!video/out/
+!video/out/**
+
 # Env
 .env
 .env.local
