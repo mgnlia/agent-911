@@ -13,17 +13,17 @@ fi
 ROOT="$(cd "$(dirname "$0")"/../.. && pwd)"
 mkdir -p "$ROOT/infra/axl/logs" "$ROOT/infra/axl/run"
 
-# Generate per-node private keys if missing (64 random hex bytes)
+# Generate per-node ed25519 private keys as PEM if missing.
+# Yggdrasil's config loader expects PEM-encoded ed25519 private keys.
 for i in 1 2 3; do
   KEY_FILE="$ROOT/infra/axl/node-$i/private.pem"
-  if [ ! -s "$KEY_FILE" ]; then
-    # AXL uses Yggdrasil's key format (hex ed25519 private key)
-    # Generate if not present. Prefer openssl if available, fallback to /dev/urandom.
-    if command -v openssl >/dev/null 2>&1; then
-      openssl rand -hex 32 > "$KEY_FILE"
-    else
-      head -c 32 /dev/urandom | xxd -p -c 64 > "$KEY_FILE"
+  if [ ! -s "$KEY_FILE" ] || ! grep -q "BEGIN PRIVATE KEY" "$KEY_FILE" 2>/dev/null; then
+    if ! command -v openssl >/dev/null 2>&1; then
+      echo "openssl is required to generate ed25519 keys" >&2
+      exit 1
     fi
+    rm -f "$KEY_FILE"
+    openssl genpkey -algorithm ed25519 -out "$KEY_FILE"
     chmod 600 "$KEY_FILE"
     echo "generated $KEY_FILE"
   fi
