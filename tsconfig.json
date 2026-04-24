@@ -17,7 +17,9 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "declaration": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["lib/**/*.ts", "agents/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "out", "cache", "lib/forge-std", "lib/openzeppelin-contracts", "app"]

@@ -125,16 +125,20 @@ async function main(): Promise<void> {
   const nftFactory    = new ContractFactory(abi("Agent911PolicyNFT"), bytecode("Agent911PolicyNFT"), deployer);
   const mockFactory   = new ContractFactory(abi("MockERC20"),         bytecode("MockERC20"),         deployer);
 
-  const quorum = await (await quorumFactory.deploy()).waitForDeployment();
-  const nft    = await (await nftFactory.deploy()).waitForDeployment();
-  const usdc   = await (await mockFactory.deploy("USD Coin", "USDC", 6)).waitForDeployment();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const quorum = (await (await quorumFactory.deploy()).waitForDeployment()) as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nft    = (await (await nftFactory.deploy()).waitForDeployment()) as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const usdc   = (await (await mockFactory.deploy("USD Coin", "USDC", 6)).waitForDeployment()) as any;
 
   const quorumAddr = await quorum.getAddress();
   const nftAddr    = await nft.getAddress();
   const usdcAddr   = await usdc.getAddress();
 
   const vaultFactory = new ContractFactory(abi("Agent911Vault"), bytecode("Agent911Vault"), deployer);
-  const vault = await (await vaultFactory.deploy(quorumAddr, nftAddr)).waitForDeployment();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const vault = (await (await vaultFactory.deploy(quorumAddr, nftAddr)).waitForDeployment()) as any;
   const vaultAddr = await vault.getAddress();
 
   console.log(`  quorum: ${quorumAddr}`);
