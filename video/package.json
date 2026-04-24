@@ -1,0 +1,22 @@
+{
+  "name": "agent-911-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remotion video for Agent-911 demo",
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion render agent911 out/agent-911.mp4 --codec=h264"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.317",
+    "@remotion/cli": "^4.0.317",
+    "@remotion/renderer": "^4.0.317",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "^4.0.317"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "typescript": "^5.7.2"
+  }
+}
