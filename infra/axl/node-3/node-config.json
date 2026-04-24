@@ -1,0 +1,13 @@
+{
+  "PrivateKeyPath": "infra/axl/node-3/private.pem",
+  "Peers": [
+    "tls://34.46.48.224:9001",
+    "tls://136.111.135.206:9001"
+  ],
+  "Listen": [],
+  "tcp_port": 7003,
+  "api_port": 9103,
+  "router_port": 9203,
+  "a2a_port": 9303,
+  "a2a_addr": "http://127.0.0.1"
+}
