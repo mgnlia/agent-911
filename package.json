@@ -1,0 +1,35 @@
+{
+  "name": "agent-911",
+  "version": "0.1.0",
+  "private": true,
+  "description": "External failure oracle + rescue layer for autonomous onchain AI agents",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "forge test",
+    "build": "forge build",
+    "spike": "tsx scripts/spike-rescue.ts",
+    "deploy:0g": "forge script script/Deploy.s.sol --rpc-url zerog_testnet --broadcast",
+    "deploy:anvil": "forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "anvil": "anvil --host 0.0.0.0 --block-time 2",
+    "demo:start": "tsx scripts/demo-start.ts",
+    "demo:kill": "tsx scripts/demo-kill-agent.ts",
+    "demo:reset": "tsx scripts/demo-reset.ts",
+    "axl:up": "bash infra/axl/up.sh",
+    "axl:down": "bash infra/axl/down.sh",
+    "dev": "pnpm --filter app dev"
+  },
+  "dependencies": {
+    "ethers": "^6.13.4",
+    "viem": "^2.21.55"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.33.2"
+}
