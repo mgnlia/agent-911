@@ -1,14 +1,23 @@
 /**
  * Thin AXL client. Each AXL node exposes an HTTP API on `localhost:<api_port>`:
  *
- *   GET  /topology  →  { our_public_key, peers[], tree[] }
- *   POST /send      →  raw body, header X-Destination-Peer-Id: <hex pubkey>
- *   GET  /recv      →  JSON { from_peer_id, data }  (polls inbox)
+ *   GET  /topology  →  JSON { our_public_key, peers[], tree[] }
+ *   POST /send      →  raw body; header X-Destination-Peer-Id: <hex pubkey>
+ *                     response sets X-Sent-Bytes on success
+ *   GET  /recv      →  raw body; header X-From-Peer-Id: <hex pubkey>
+ *                     204 No Content when inbox empty
  *
- * Agent-911 watchdogs each bind to a different AXL node; attestations are
- * sent from watchdog-N → coordinator via /send. The coordinator polls /recv
- * on its own node and bundles the signatures into confirmFailure().
+ * Note: /recv returns RAW BINARY (not JSON). The sender peer ID lives in a
+ * response header. Length of the body = actual message size.
+ *
+ * Also: AXL has stream handlers (MCP, A2A) that inspect inbound traffic.
+ * If a message looks like JSON-RPC, the A2A stream may claim it and it
+ * won't hit the /recv queue. For our attestation traffic we use a short
+ * magic prefix + protobuf-ish framing to avoid the JSON-RPC filter. For
+ * convenience we also expose sendJson/recvJson which prefix a non-RPC byte.
  */
+
+const MAGIC_PREFIX = Uint8Array.from([0x91, 0x1a, 0x00]); // A911A00 → "Agent-911 Attestation"
 
 export interface Topology {
   our_public_key: string;
@@ -17,9 +26,9 @@ export interface Topology {
   tree: unknown[];
 }
 
-export interface RecvResult {
-  from_peer_id: string | null;
-  data: string | null; // base64
+export interface RecvRaw {
+  fromPeerId: string;
+  data: Uint8Array;
 }
 
 export interface AxlClientOpts {
@@ -47,7 +56,10 @@ export class AxlClient {
         "Content-Type": "application/octet-stream",
         "X-Destination-Peer-Id": destinationPeerId,
       },
-      body: data,
+      // The Node fetch doesn't accept Uint8Array directly in types; wrap in Buffer
+      // Uint8Array is a valid BodyInit at runtime though
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      body: data as any,
     });
     if (!r.ok) {
       const body = await r.text();
@@ -55,27 +67,39 @@ export class AxlClient {
     }
   }
 
-  /** Poll the inbox. Returns null if empty. */
-  async recv(): Promise<RecvResult | null> {
+  /** Poll the inbox. Returns null if empty (HTTP 204). */
+  async recv(): Promise<RecvRaw | null> {
     const r = await this._fetch("/recv");
-    if (r.status === 204 || r.status === 404) return null;
-    const body = (await r.json()) as RecvResult;
-    if (!body.from_peer_id) return null;
-    return body;
+    if (r.status === 204) return null;
+    if (!r.ok) throw new Error(`/recv failed: ${r.status}`);
+    const fromPeerId = r.headers.get("x-from-peer-id") ?? r.headers.get("X-From-Peer-Id") ?? "";
+    if (!fromPeerId) return null;
+    const buf = new Uint8Array(await r.arrayBuffer());
+    return { fromPeerId, data: buf };
   }
 
-  /** JSON-encoded message helper. Wire format is raw bytes, so we utf-8 encode. */
+  /** JSON-tagged message. Wire format: [MAGIC_PREFIX][utf8 json]. */
   async sendJson(destinationPeerId: string, payload: unknown): Promise<void> {
-    const data = new TextEncoder().encode(JSON.stringify(payload));
-    await this.send(destinationPeerId, data);
+    const json = new TextEncoder().encode(JSON.stringify(payload));
+    const framed = new Uint8Array(MAGIC_PREFIX.length + json.length);
+    framed.set(MAGIC_PREFIX, 0);
+    framed.set(json, MAGIC_PREFIX.length);
+    await this.send(destinationPeerId, framed);
   }
 
   async recvJson<T = unknown>(): Promise<{ fromPeerId: string; payload: T } | null> {
     const msg = await this.recv();
-    if (!msg || !msg.data) return null;
-    const bytes = Buffer.from(msg.data, "base64");
-    const payload = JSON.parse(bytes.toString("utf8")) as T;
-    return { fromPeerId: msg.from_peer_id!, payload };
+    if (!msg) return null;
+    // Check magic prefix
+    if (msg.data.length < MAGIC_PREFIX.length) return null;
+    for (let i = 0; i < MAGIC_PREFIX.length; i++) {
+      if (msg.data[i] !== MAGIC_PREFIX[i]) {
+        // Unknown format — surface the raw peer anyway
+        return null;
+      }
+    }
+    const json = new TextDecoder().decode(msg.data.subarray(MAGIC_PREFIX.length));
+    return { fromPeerId: msg.fromPeerId, payload: JSON.parse(json) as T };
   }
 
   private async _fetch(path: string, init?: RequestInit): Promise<Response> {
