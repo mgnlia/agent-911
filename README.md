@@ -230,7 +230,8 @@ Realistic public-infrastructure budget (from our red-team analysis in [<internal
 - [<internal>](./<internal>) — 6-round codex debate that landed us on this idea
 - [<internal>](./<internal>) — architecture deep dive + 10-day plan
 - [<internal>](./<internal>) — Day 1 first-4-hour runbook + realistic timing
-- [<internal>](./<internal>) — 3-minute demo video script
+- [`video/out/agent-911.mp4`](./video/out/agent-911.mp4) — **rendered 70-second explainer** (Remotion, 9 scenes). [source](./video/)
+- [<internal>](./<internal>) — 3-minute live-dashboard recording script
 - [<internal>](./<internal>) — 8-panel cartoon for non-crypto audiences
 - [<internal>](./<internal>) — sponsor-platform feedback (Uniswap, KeeperHub, Gensyn, ENS, 0G)
 
