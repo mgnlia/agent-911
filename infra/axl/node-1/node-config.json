@@ -5,7 +5,7 @@
     "tls://136.111.135.206:9001"
   ],
   "Listen": [],
-  "tcp_port": 7001,
+  "tcp_port": 7000,
   "api_port": 9101,
   "router_port": 9201,
   "a2a_port": 9301,
