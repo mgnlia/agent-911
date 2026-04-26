@@ -225,10 +225,13 @@ async function main(): Promise<void> {
   console.log("[live] tx: quorum.registerPolicy");
   const quorum = new Contract(addrs.WatchdogQuorum, abi("WatchdogQuorum"), deployer);
   const watchdogAddrs = WATCHDOG_NODES.map(w => new Wallet(w.pk).address);
+  // NB: registerPolicy now requires tokenId — gated on policyNFT.ownerOf(tokenId) == msg.sender
+  // (front-running fix in WatchdogQuorum.sol after the contract security sweep).
   const regTx = await quorum.registerPolicy(
     policyId,
+    tokenId,
     addrs.Agent911Vault,
-    metadataHash, // use actual runbook hash committed to chain
+    metadataHash,
     watchdogAddrs,
     2,
     30,
