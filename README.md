@@ -1,8 +1,8 @@
 # Agent-911 × WatchdogQuorum
 
-> **The primitive:** Autonomous agents need an external failure oracle. `WatchdogQuorum` lets independent agents attest that another agent is unhealthy, then triggers a preauthorized recovery action.
+> **Agent-911 is the first onchain failure oracle for autonomous onchain agents.** `WatchdogQuorum.sol` is the composable primitive: independent agents sign EIP-712 attestations that another agent is unhealthy, the contract recovers signers, hits an m-of-n threshold, and emits `FailureConfirmed` — a clean event any downstream protocol can react to.
 >
-> **The demo:** When an onchain treasury agent crashes, independent ENS-named watchdogs on separate Gensyn AXL nodes prove failure onchain and KeeperHub executes the precommitted rescue — before the market does it for you.
+> **The demo:** When an onchain treasury agent crashes, independent ENS-named watchdogs on separate Gensyn AXL nodes prove failure onchain and the precommitted rescue executes — before the market does it for you.
 
 Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 6).
 
@@ -10,9 +10,11 @@ Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 6).
 
 ## Why this exists
 
-In February 2026, an AI agent cascade triggered **$400M in liquidations** as autonomous trading agents simultaneously exited positions. 40% of on-chain transactions are now initiated by agents. Agentic wallets (Coinbase, Human.tech, Openfort) solve the *intent* problem — spending caps, whitelists, human leashes — but **none solve the post-crash problem**: when the agent itself dies, hangs, hallucinates, or misses a liquidation window, funds are stranded in positions that were only safe while the agent was healthy.
+Agent-911 is the **first onchain failure oracle** for autonomous onchain agents. Not a monitor, not a service — an onchain primitive. `WatchdogQuorum.confirmFailure(...)` recovers signers from m-of-n EIP-712 attestations and emits `FailureConfirmed(policyId)`. That event is the composable surface: the rescue vault here is one consumer; any other protocol can subscribe and act on it the same way.
 
-A Safe dead-man's-switch can't solve this either — it's timer-based. Agent-911 is *observer-based* with a *contextual runbook*.
+This matters because in February 2026, an AI agent cascade triggered **$400M in liquidations** as autonomous trading agents simultaneously exited positions. 40% of on-chain transactions are now initiated by agents. Agentic wallets (Coinbase, Human.tech, Openfort) solve the *intent* problem — spending caps, whitelists, human leashes — but **none solve the post-crash problem**: when the agent itself dies, hangs, hallucinates, or misses a liquidation window, funds are stranded in positions that were only safe while the agent was healthy.
+
+Off-chain monitors (Defender, Gelato, dead-man-switches) are timer-based or webhook-based — they trust their own infra to call into the chain. A failure oracle inverts that: the failure signal *is* an onchain event, signed by independent quorum participants, free for any protocol to consume. Agent-911 is *observer-based* with a *contextual runbook*, and it's a category of one because the signal is onchain.
 
 ## The 20-second demo
 
