@@ -4,7 +4,7 @@
 >
 > **The demo:** When an onchain treasury agent crashes, independent ENS-named watchdogs on separate Gensyn AXL nodes prove failure onchain and KeeperHub executes the precommitted rescue — before the market does it for you.
 
-Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 3).
+Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 6).
 
 ---
 
@@ -119,7 +119,7 @@ bash infra/axl/down.sh        # stop the mesh
 ### Tests
 
 ```bash
-forge test -vv                # 19 contract tests
+forge test -vv                # 21 contract tests
 pnpm spike                    # Gate 2: file-bus end-to-end kill→rescue
 pnpm spike:axl                # Gate 2: AXL-mesh end-to-end kill→rescue
 pnpm exec tsx scripts/axl-smoke.ts  # 3-node topology + send/recv roundtrip
@@ -155,7 +155,7 @@ contracts (forge)
   src/Agent911UniswapExecutor.sol    # Uniswap v3 rescue extension
   src/AgentIdentityRegistry.sol      # ERC-8004-lite identity + reputation
   src/mocks/MockERC20.sol
-  test/*.t.sol                       # 19 tests, Foundry
+  test/*.t.sol                       # 21 tests, Foundry
   script/Deploy.s.sol                # 0G deploy script
 
 agents
