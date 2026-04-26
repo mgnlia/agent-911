@@ -25,6 +25,7 @@ import { abi } from "../lib/contracts.ts";
 import { AxlClient } from "../lib/axl.ts";
 import { signAttestation } from "../lib/eip712.ts";
 import { ZeroGStorage, encryptRunbook, derivePolicyKey, type Runbook } from "../lib/zero-g-storage.ts";
+import { KeeperHub } from "../lib/keeperhub.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Contract = _Contract as any;
@@ -278,11 +279,21 @@ async function main(): Promise<void> {
   const killToConfirmed = Date.now() - killT0;
   console.log(`[live] kill -> FailureConfirmed = ${killToConfirmed}ms`);
 
-  // --- 10. rescue on LIVE 0G ---
-  console.log("[live] tx: vault.rescue");
-  const rescueTx = await vault.rescue(policyId, addrs.MockERC20_mUSDC);
-  console.log(`[live]   hash=${rescueTx.hash}`);
-  const rescueRc = await waitTxWithExplorerFallback(provider, rescueTx.hash, 120_000);
+  // --- 10. rescue on LIVE 0G via KeeperHub (falls back to local signer if KH_API_KEY unset) ---
+  const kh = new KeeperHub({
+    apiKey:     process.env.KH_API_KEY,
+    workflowId: process.env.KH_WORKFLOW_ID,
+    rpcUrl:     RPC_URL,
+    signerPk:   PRIVATE_KEY,
+  });
+  console.log(`[live] tx: vault.rescue via ${kh.hasCreds ? "KeeperHub" : "local signer (KH_API_KEY unset)"}`);
+  const rescueReceipt = await kh.executeRescue({
+    policyId:     policyId as `0x${string}`,
+    vaultAddress: addrs.Agent911Vault as `0x${string}`,
+    token:        addrs.MockERC20_mUSDC as `0x${string}`,
+  });
+  console.log(`[live]   hash=${rescueReceipt.txHash} (executor=${rescueReceipt.executedBy})`);
+  const rescueRc = await waitTxWithExplorerFallback(provider, rescueReceipt.txHash, 120_000);
   const killToSafe = Date.now() - killT0;
 
   const safeBal = await usdc.balanceOf(safeAddress);
@@ -314,7 +325,7 @@ async function main(): Promise<void> {
       approve:        { hash: approveTx.hash, explorer: `${EXPLORER}/tx/${approveTx.hash}` },
       deposit:        { hash: depTx.hash,    explorer: `${EXPLORER}/tx/${depTx.hash}` },
       confirmFailure: { hash: confirmTx.hash, blockNumber: confirmRc.blockNumber, explorer: `${EXPLORER}/tx/${confirmTx.hash}` },
-      rescue:         { hash: rescueTx.hash,  blockNumber: rescueRc.blockNumber,  explorer: `${EXPLORER}/tx/${rescueTx.hash}` },
+      rescue:         { hash: rescueReceipt.txHash, blockNumber: rescueRc.blockNumber, executedBy: rescueReceipt.executedBy, explorer: `${EXPLORER}/tx/${rescueReceipt.txHash}` },
     },
     finalBalances: {
       safe:  safeBal.toString(),
