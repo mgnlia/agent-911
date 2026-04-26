@@ -210,8 +210,13 @@ const INDEX_HTML = [
   '<style>',
   ':root { --bg:#0f1115; --fg:#e6e7eb; --muted:#9aa0aa; --dead:#ff4d4d; --live:#5eff8a; --warn:#ffbb33; --panel:#171a21; --accent:#6aa6ff; }',
   'body { margin:0; font-family: ui-monospace,Menlo,Consolas,monospace; background:var(--bg); color:var(--fg); }',
+  '.persona { background:#000; color:#fff; padding:14px 24px; font-size:20px; font-weight:700; letter-spacing:0.01em; border-bottom:1px solid #1a1d24; display:flex; flex-wrap:wrap; gap:14px; align-items:baseline; }',
+  '.persona .who { color:#fff; }',
+  '.persona .at-risk { color:var(--warn); }',
+  '.persona .agent { color:var(--accent); font-weight:600; }',
+  '.persona .dot { color:#3a3f4a; font-weight:400; }',
   '.app { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; padding:20px; min-height:100vh; }',
-  '.panel { background:var(--panel); border-radius:10px; padding:16px; border:1px solid #242935; }',
+  '.panel { background:var(--panel); border-radius:10px; padding:16px; border:1px solid #242935; transition: box-shadow 200ms ease; }',
   'h2 { margin:0 0 12px; font-size:14px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }',
   '.kv { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed #2a2f3a; font-size:13px; }',
   '.kv b { color:var(--muted); font-weight:normal; }',
@@ -224,9 +229,23 @@ const INDEX_HTML = [
   '.stamp.pending { color:var(--muted); }',
   '.title { font-size:22px; font-weight:700; color:#fff; margin-bottom:18px; }',
   '.sub { font-size:12px; color:var(--muted); }',
+  '#safe-bal { transition: color 200ms ease; }',
+  '@keyframes safe-flash { 0% { box-shadow: 0 0 0 0 rgba(255,77,77,0.0); border-color:#242935; } 18% { box-shadow: 0 0 24px 6px rgba(255,77,77,0.55); border-color:var(--dead); } 55% { box-shadow: 0 0 24px 6px rgba(94,255,138,0.55); border-color:var(--live); } 100% { box-shadow: 0 0 0 0 rgba(94,255,138,0.0); border-color:#242935; } }',
+  '.panel.flash-rescue { animation: safe-flash 1.2s ease-out 1; }',
+  '.attack-card { padding:10px 12px; background:#2a1416; border:1px solid #ff4d4d; border-radius:6px; margin-bottom:8px; color:#ffd9d9; font-size:12px; }',
+  '.attack-card .hdr { color:var(--dead); font-weight:bold; text-transform:uppercase; letter-spacing:0.05em; font-size:11px; margin-bottom:4px; }',
+  '.attack-card .who { color:#ff8080; word-break:break-all; }',
+  '.attack-card .reason { color:#ffd9d9; margin-top:4px; }',
   '</style>',
   '</head>',
   '<body>',
+  '<div class="persona">',
+  '<span class="who">alice.eth</span>',
+  '<span class="dot">·</span>',
+  '<span class="at-risk">$10,000 mUSDC at risk</span>',
+  '<span class="dot">·</span>',
+  '<span>agent: <span class="agent">main.agent-911.eth</span></span>',
+  '</div>',
   '<div style="padding:20px 20px 0 20px;">',
   '<div class="title">Agent-911 — Autonomous Agent Rescue Layer</div>',
   '<div class="sub">Kill the main agent, watch the watchdog quorum save the funds. Heartbeat + AXL mesh + 0G + ERC-7857 policy NFT.</div>',
@@ -247,10 +266,11 @@ const INDEX_HTML = [
   '<div class="watchdog"><span class="id">watchdog-2.agent-911.eth</span> <span class="stamp pending" data-w="2">pending</span></div>',
   '<div class="watchdog"><span class="id">watchdog-3.agent-911.eth</span> <span class="stamp pending" data-w="3">pending</span></div>',
   '</div>',
+  '<div id="rejected-attestations"></div>',
   '<div class="kv"><b>quorum</b><span id="quorum-state">pending</span></div>',
   '<div class="kv"><b>failure confirmed tx</b><span class="hex" id="confirm-tx">—</span></div>',
   '</div>',
-  '<div class="panel">',
+  '<div class="panel" id="safe-panel">',
   '<h2>Safe Wallet</h2>',
   '<div class="kv"><b>vault balance</b><span id="vault-bal">—</span></div>',
   '<div class="kv"><b>safe balance</b><span class="live" id="safe-bal">—</span></div>',
@@ -268,13 +288,58 @@ const INDEX_HTML = [
   'const $ = (id) => document.getElementById(id);',
   'const log = (msg) => { const el = $("log"); const line = document.createElement("div"); line.textContent = new Date().toISOString().slice(11,19) + "  " + msg; el.prepend(line); while (el.childNodes.length > 100) el.removeChild(el.lastChild); };',
   'let killTime = null; let tickT = null;',
-  'function formatUsdc(wei) { if (!wei) return "0 mUSDC"; const n = BigInt(wei); const w = (Number(n) / 1e6).toLocaleString(undefined,{maximumFractionDigits:2}); return w + " mUSDC"; }',
+  'function fmtUsdcNum(n) { return n.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}) + " mUSDC"; }',
+  'function weiToNum(wei) { if (!wei) return 0; try { return Number(BigInt(wei)) / 1e6; } catch(e) { return 0; } }',
+  '// per-element tween state; cancels an in-flight tween if a new target arrives',
+  'const tweenState = {};',
+  'function tweenUsdc(id, targetWei, durMs) {',
+  '  const el = $(id); if (!el) return;',
+  '  const target = weiToNum(targetWei);',
+  '  const prev = tweenState[id];',
+  '  if (prev) cancelAnimationFrame(prev.raf);',
+  '  const start = (prev && typeof prev.value === "number") ? prev.value : target; // first paint = snap',
+  '  if (!prev || start === target) { el.textContent = fmtUsdcNum(target); tweenState[id] = { value: target, raf: 0 }; return; }',
+  '  const t0 = performance.now();',
+  '  const dur = durMs || 800;',
+  '  const step = (t) => {',
+  '    const k = Math.min(1, (t - t0) / dur);',
+  '    // ease-out cubic',
+  '    const e = 1 - Math.pow(1 - k, 3);',
+  '    const cur = start + (target - start) * e;',
+  '    el.textContent = fmtUsdcNum(cur);',
+  '    if (k < 1) { tweenState[id].raf = requestAnimationFrame(step); }',
+  '    else { tweenState[id].value = target; tweenState[id].raf = 0; }',
+  '  };',
+  '  tweenState[id] = { value: start, raf: requestAnimationFrame(step) };',
+  '}',
+  'function flashSafePanel() {',
+  '  const p = $("safe-panel"); if (!p) return;',
+  '  p.classList.remove("flash-rescue");',
+  '  // force reflow so animation can replay',
+  '  void p.offsetWidth;',
+  '  p.classList.add("flash-rescue");',
+  '}',
   'function startTimer() { if (killTime) return; killTime = Date.now(); tickT = setInterval(()=> { const d = Math.floor((Date.now() - killTime)/1000); const m = String(Math.floor(d/60)).padStart(2,"0"); const s = String(d%60).padStart(2,"0"); $("timer").textContent = m + ":" + s; }, 500); }',
   'function stopTimer() { if (tickT) clearInterval(tickT); }',
   'function matchWatchdog(id) { if (id.startsWith("watchdog-1")) return "1"; if (id.startsWith("watchdog-2")) return "2"; if (id.startsWith("watchdog-3")) return "3"; return null; }',
   'function setText(id, txt) { const el = $(id); if (el) el.textContent = txt; }',
   'function setClass(id, cls) { const el = $(id); if (el) el.className = cls; }',
   'function setQuorumConfirmed() { const el = $("quorum-state"); if (!el) return; el.textContent = ""; const s = document.createElement("span"); s.className = "live"; s.textContent = "CONFIRMED"; el.appendChild(s); }',
+  'function shortAddr(a) { if (!a || a.length < 10) return a || "?"; return a.slice(0,6) + "…" + a.slice(-4); }',
+  'function renderRejectedAttestation(attacker, reason) {',
+  '  const host = $("rejected-attestations"); if (!host) return;',
+  '  const card = document.createElement("div");',
+  '  card.className = "attack-card";',
+  '  const hdr = document.createElement("div");',
+  '  hdr.className = "hdr"; hdr.textContent = "Rejected attestation";',
+  '  const who = document.createElement("div");',
+  '  who.className = "who"; who.textContent = "from " + shortAddr(attacker || "0x") + " (not a registered watchdog)";',
+  '  const why = document.createElement("div");',
+  '  why.className = "reason"; why.textContent = "on-chain revert: " + (reason || "unauthorized signer");',
+  '  card.appendChild(hdr); card.appendChild(who); card.appendChild(why);',
+  '  host.prepend(card);',
+  '  while (host.childNodes.length > 3) host.removeChild(host.lastChild);',
+  '}',
   'const src = new EventSource("/events");',
   'src.onmessage = (ev) => {',
   '  const { type, payload } = JSON.parse(ev.data);',
@@ -283,7 +348,15 @@ const INDEX_HTML = [
   '  else if (type === "attestation") { const n = matchWatchdog(payload.watchdogId); if (n) { const s = document.querySelector(\'[data-w="\' + n + \'"]\'); if (s) { s.textContent = "SIGNED"; s.classList.remove("pending"); } } log("attestation from " + payload.watchdogId + " (axl peer " + payload.fromPeer + ")"); }',
   '  else if (type === "failure_confirmed") { setQuorumConfirmed(); setText("confirm-tx", payload.txHash); log("FailureConfirmed at block " + payload.block); }',
   '  else if (type === "rescued") { setText("rescue-tx", payload.txHash); stopTimer(); log("RESCUED at block " + payload.block); }',
-  '  else if (type === "chain_state") { setText("vault-bal", formatUsdc(payload.vaultBalance)); setText("safe-bal", formatUsdc(payload.safeBalance)); setText("block", String(payload.block)); }',
+  '  else if (type === "chain_state") {',
+  '    const prevSafe = (tweenState["safe-bal"] && typeof tweenState["safe-bal"].value === "number") ? tweenState["safe-bal"].value : null;',
+  '    const newSafe = weiToNum(payload.safeBalance);',
+  '    tweenUsdc("vault-bal", payload.vaultBalance, 800);',
+  '    tweenUsdc("safe-bal",  payload.safeBalance, 800);',
+  '    setText("block", String(payload.block));',
+  '    if (prevSafe !== null && Math.abs(newSafe - prevSafe) > 0.0001) flashSafePanel();',
+  '  }',
+  '  else if (type === "attack-rejected") { renderRejectedAttestation(payload.attacker, payload.reason); log("ATTACK REJECTED — " + shortAddr(payload.attacker) + " — " + (payload.reason || "")); }',
   '};',
   '</script>',
   '</body>',
@@ -307,6 +380,30 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
     const client: Client = { res };
     clients.add(client);
     req.on("close", () => clients.delete(client));
+    return;
+  }
+  if (req.url === "/emit" && req.method === "POST") {
+    // External scripts (e.g. demo-attack.ts) push synthetic events into the SSE
+    // stream so the dashboard can reflect side-band actions like rejected
+    // attestations. Trusted localhost-only — there's no auth here.
+    let body = "";
+    req.on("data", (chunk: Buffer) => { body += chunk.toString("utf8"); if (body.length > 64 * 1024) req.destroy(); });
+    req.on("end", () => {
+      try {
+        const ev = JSON.parse(body) as { type?: string; payload?: Record<string, unknown> };
+        if (!ev || typeof ev.type !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "missing type" }));
+          return;
+        }
+        emit(ev.type, ev.payload ?? {});
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: String(err) }));
+      }
+    });
     return;
   }
   res.writeHead(404);

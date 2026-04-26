@@ -203,6 +203,19 @@ async function main(): Promise<void> {
   console.log("[demo] next: 'pnpm demo:kill' to kill main-agent, watch rescue happen");
   console.log("[demo] (Ctrl-C to tear down)");
 
+  // Optional: auto-launch the hallucination attack scene before the kill.
+  // Fires ~5s after the demo is live so it lands while the main agent is
+  // still healthy — the pitch line is "an attacker tries to drain the vault
+  // before the agent is even down, and the on-chain quorum rejects it."
+  if (process.env.DEMO_ATTACK === "1") {
+    setTimeout(() => {
+      console.log("[demo] DEMO_ATTACK=1 → launching demo-attack scene…");
+      const p = startProc("demo-attack", "tsx", ["scripts/demo-attack.ts"]);
+      // Detach so it doesn't keep demo-start alive if the user Ctrl-Cs.
+      p.unref?.();
+    }, 5_000);
+  }
+
   // Wait forever until SIGINT; cleanup on exit
   const shutdown = () => {
     console.error("\n[demo] shutting down...");
