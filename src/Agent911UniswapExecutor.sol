@@ -84,11 +84,17 @@ contract Agent911UniswapExecutor {
     ///         gives this executor custody. For the demo we take the
     ///         simpler route: caller transfers tokens here, we verify
     ///         quorum, swap, forward.
+    /// @dev    Caller is restricted to the policy-NFT owner. Otherwise any
+    ///         keeper / MEV searcher could call this with `amountOutMinimum
+    ///         = 0` (or low) and sandwich the rescue swap, extracting value
+    ///         that should have gone to the safe. Restricting to the owner
+    ///         lets them set sane slippage and / or use a private mempool.
     function rescueWithSwap(
         bytes32 policyId,
         uint256 tokenId,
         SwapPlan calldata plan
     ) external returns (uint256 amountOut) {
+        require(msg.sender == policyNFT.ownerOf(tokenId), "not policy NFT owner");
         require(quorum.isFailed(policyId), "quorum not confirmed");
 
         address safe = policyNFT.safeAddressOf(tokenId);
