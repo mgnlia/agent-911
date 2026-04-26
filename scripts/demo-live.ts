@@ -118,6 +118,11 @@ async function main(): Promise<void> {
 
   // --- generate fresh policyId for this run ---
   const policyId = hexlify(randomBytes(32)) as `0x${string}`;
+  // currentRunPolicyId is captured for the inbox filter below — only this
+  // run's attestations should be admitted; stragglers from a prior crashed
+  // run carry a different policyId and would otherwise revert confirmFailure
+  // with "unauthorized signer" because the new policy has new watchdog keys.
+  const currentRunPolicyId = policyId;
   const safeAddr = ("0x" + "5afe".repeat(10)) as `0x${string}`; // 0x5afe5afe...5afe
   const safeAddress = safeAddr.slice(0, 42) as `0x${string}`;
   console.log(`[live] policyId: ${policyId}`);
@@ -244,6 +249,21 @@ async function main(): Promise<void> {
   }
 
   await new Promise(r => setTimeout(r, 3000));
+
+  // Drain any stale messages left in the coordinator's AXL inbox by a prior
+  // crashed run. Without this, attestations carrying a stale policyId can
+  // race ahead of this run's attestations into confirmFailure, where they
+  // revert with "unauthorized signer" against the freshly registered quorum.
+  // The policyId filter below provides defence in depth, but we drain too
+  // so the inbox starts empty for a deterministic demo.
+  let drained = 0;
+  for (;;) {
+    const stale = await coord.recvJson<Record<string, unknown>>();
+    if (!stale) break;
+    drained++;
+  }
+  if (drained > 0) console.log(`[live] drained ${drained} stale AXL inbox message(s) before kill`);
+
   console.log("\n============================");
   console.log("[live] KILL -9 main-agent");
   console.log("============================\n");
@@ -258,7 +278,14 @@ async function main(): Promise<void> {
   while (atts.length < 3 && Date.now() - start < timeoutMs) {
     const msg = await coord.recvJson<Record<string, unknown>>();
     if (msg && typeof msg.payload === "object" && (msg.payload as { kind?: string }).kind === "Agent911.FailureAttestation") {
-      const p = msg.payload as { watchdogId: string; observedAt: number; expiry: number; signature: `0x${string}` };
+      const p = msg.payload as { watchdogId: string; observedAt: number; expiry: number; signature: `0x${string}`; policyId: `0x${string}` };
+      // Hard filter: only this run's policyId is admitted. Anything else is
+      // a straggler from a prior process and would revert confirmFailure
+      // with "unauthorized signer" against the freshly registered quorum.
+      if (p.policyId !== currentRunPolicyId) {
+        console.log(`[live] ignoring attestation from ${p.watchdogId} (policyId mismatch ${String(p.policyId).slice(0, 10)}…)`);
+        continue;
+      }
       if (!seen.has(p.watchdogId)) {
         seen.add(p.watchdogId);
         atts.push({ watchdogId: p.watchdogId, observedAt: BigInt(p.observedAt), expiry: BigInt(p.expiry), signature: p.signature });
