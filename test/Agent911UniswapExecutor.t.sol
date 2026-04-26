@@ -52,8 +52,8 @@ contract Agent911UniswapExecutorTest is Test {
         w2 = vm.addr(W2_PK);
         w3 = vm.addr(W3_PK);
 
-        q        = new WatchdogQuorum();
         nft      = new Agent911PolicyNFT();
+        q        = new WatchdogQuorum(nft);
         vault    = new Agent911Vault(q, nft);
         router   = new MockSwapRouter();
         exec     = new Agent911UniswapExecutor(q, nft, vault, router);
@@ -65,10 +65,11 @@ contract Agent911UniswapExecutorTest is Test {
         vm.prank(ALICE);
         vault.bindPolicy(POLICY_ID, tokenId);
 
-        // register quorum
+        // register quorum (NFT-owner gated)
         address[] memory ws = new address[](3);
         ws[0] = w1; ws[1] = w2; ws[2] = w3;
-        q.registerPolicy(POLICY_ID, address(vault), RUNBOOK_HASH, ws, 2, 30, 0);
+        vm.prank(ALICE);
+        q.registerPolicy(POLICY_ID, tokenId, address(vault), RUNBOOK_HASH, ws, 2, 30, 0);
 
         // Alice deposits 1000 VOL into vault
         volatile_.mint(ALICE, 1000e18);
@@ -113,6 +114,8 @@ contract Agent911UniswapExecutorTest is Test {
         vm.prank(SAFE);
         volatile_.transfer(address(exec), 1000e18);
 
+        // rescueWithSwap is now restricted to the policy NFT owner.
+        vm.prank(ALICE);
         uint256 amountOut = exec.rescueWithSwap(
             POLICY_ID,
             1,
@@ -132,6 +135,7 @@ contract Agent911UniswapExecutorTest is Test {
 
     function test_RescueWithSwap_RevertsWithoutQuorum() public {
         volatile_.mint(address(exec), 100e18);
+        vm.prank(ALICE);
         vm.expectRevert(bytes("quorum not confirmed"));
         exec.rescueWithSwap(POLICY_ID, 1, Agent911UniswapExecutor.SwapPlan({
             tokenIn: address(volatile_),
@@ -140,5 +144,51 @@ contract Agent911UniswapExecutorTest is Test {
             amountOutMinimum: 0,
             deadline: block.timestamp + 10 minutes
         }));
+    }
+
+    /// @notice The exact MEV scenario: quorum has fired, an MEV searcher
+    ///         calls rescueWithSwap with `amountOutMinimum = 0` to extract
+    ///         value via a sandwich. With the auth gate, only the policy
+    ///         NFT owner can call — searchers and other keepers revert.
+    function test_RescueWithSwap_RevertsForNonOwner() public {
+        // Fire quorum so we are past the quorum check.
+        uint64 expiry = uint64(block.timestamp + 5 minutes);
+        WatchdogQuorum.Attestation[] memory atts = new WatchdogQuorum.Attestation[](2);
+        atts[0] = WatchdogQuorum.Attestation({
+            observedAt: uint64(block.timestamp),
+            expiry: expiry,
+            signature: _sign(W1_PK, uint64(block.timestamp), expiry)
+        });
+        atts[1] = WatchdogQuorum.Attestation({
+            observedAt: uint64(block.timestamp),
+            expiry: expiry,
+            signature: _sign(W2_PK, uint64(block.timestamp), expiry)
+        });
+        q.confirmFailure(POLICY_ID, atts);
+
+        // Fund the executor so the swap path would otherwise execute.
+        volatile_.mint(address(exec), 100e18);
+
+        address mev = address(0xBADBADBAD);
+        vm.prank(mev);
+        vm.expectRevert(bytes("not policy NFT owner"));
+        exec.rescueWithSwap(POLICY_ID, 1, Agent911UniswapExecutor.SwapPlan({
+            tokenIn: address(volatile_),
+            tokenOut: address(usdc),
+            fee: 3000,
+            amountOutMinimum: 0, // sandwich-friendly minOut
+            deadline: block.timestamp + 10 minutes
+        }));
+
+        // The owner can still call (smoke test that the gate doesn't lock everyone out).
+        vm.prank(ALICE);
+        exec.rescueWithSwap(POLICY_ID, 1, Agent911UniswapExecutor.SwapPlan({
+            tokenIn: address(volatile_),
+            tokenOut: address(usdc),
+            fee: 3000,
+            amountOutMinimum: 200e18,
+            deadline: block.timestamp + 10 minutes
+        }));
+        assertEq(usdc.balanceOf(SAFE), 200e18, "owner-call delivered USDC");
     }
 }

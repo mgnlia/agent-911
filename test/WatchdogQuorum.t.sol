@@ -3,9 +3,11 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {WatchdogQuorum} from "../src/WatchdogQuorum.sol";
+import {Agent911PolicyNFT} from "../src/Agent911PolicyNFT.sol";
 
 contract WatchdogQuorumTest is Test {
-    WatchdogQuorum internal q;
+    WatchdogQuorum    internal q;
+    Agent911PolicyNFT internal nft;
 
     // three watchdogs + one imposter
     uint256 internal constant W1_PK = 0xA11CE0001;
@@ -17,6 +19,12 @@ contract WatchdogQuorumTest is Test {
     address internal w2;
     address internal w3;
     address internal imposter;
+
+    address internal constant ALICE = address(0xA11CEA11CE);
+    address internal constant ATTACKER = address(0xBADBADBAD);
+    address internal constant SAFE = address(0x5AFE5AFE);
+
+    uint256 internal aliceTokenId;
 
     bytes32 internal constant POLICY_ID = keccak256("policy/alice/treasury/v1");
     bytes32 internal constant RUNBOOK_HASH = keccak256("runbook/alice/treasury/v1");
@@ -32,15 +40,21 @@ contract WatchdogQuorumTest is Test {
         w3 = vm.addr(W3_PK);
         imposter = vm.addr(IMPOSTER_PK);
 
-        q = new WatchdogQuorum();
+        nft = new Agent911PolicyNFT();
+        q   = new WatchdogQuorum(nft);
+
+        // Alice owns the policy NFT that authorizes registerPolicy below.
+        aliceTokenId = nft.mintPolicy(ALICE, "ipfs://runbook.json", RUNBOOK_HASH, SAFE);
 
         address[] memory watchdogs = new address[](3);
         watchdogs[0] = w1;
         watchdogs[1] = w2;
         watchdogs[2] = w3;
 
+        vm.prank(ALICE);
         q.registerPolicy({
             policyId: POLICY_ID,
+            tokenId: aliceTokenId,
             vault: VAULT,
             runbookHash: RUNBOOK_HASH,
             watchdogs: watchdogs,
@@ -190,8 +204,10 @@ contract WatchdogQuorumTest is Test {
         ws[0] = w1;
         ws[1] = w2;
 
+        vm.prank(ALICE);
         q.registerPolicy({
             policyId: pid2,
+            tokenId: aliceTokenId,
             vault: VAULT,
             runbookHash: RUNBOOK_HASH,
             watchdogs: ws,
@@ -244,9 +260,11 @@ contract WatchdogQuorumTest is Test {
         ws[1] = w2;
         ws[2] = w3;
 
+        vm.prank(ALICE);
         vm.expectRevert(bytes("policy exists"));
         q.registerPolicy({
             policyId: POLICY_ID,
+            tokenId: aliceTokenId,
             vault: VAULT,
             runbookHash: RUNBOOK_HASH,
             watchdogs: ws,
@@ -261,9 +279,11 @@ contract WatchdogQuorumTest is Test {
         ws[0] = w1;
         ws[1] = w2;
 
+        vm.prank(ALICE);
         vm.expectRevert(bytes("bad threshold"));
         q.registerPolicy({
             policyId: keccak256("new"),
+            tokenId: aliceTokenId,
             vault: VAULT,
             runbookHash: RUNBOOK_HASH,
             watchdogs: ws,
@@ -271,5 +291,57 @@ contract WatchdogQuorumTest is Test {
             heartbeatTimeout: 30,
             expiry: 0
         });
+    }
+
+    /// @notice The exact attack the new auth gate prevents: an attacker
+    ///         tries to register a policyId with their own watchdog set
+    ///         using a tokenId they don't own. Without the gate they could
+    ///         hijack the policyId and fire failure at will.
+    function test_Reject_AttackerCannotRegisterVictimPolicyId() public {
+        bytes32 victimPolicyId = keccak256("victim/policy/v1");
+        address[] memory attackerWs = new address[](3);
+        attackerWs[0] = w1; attackerWs[1] = w2; attackerWs[2] = w3;
+
+        // Case 1: attacker tries with the victim's tokenId — they don't own it.
+        vm.prank(ATTACKER);
+        vm.expectRevert(bytes("not policy NFT owner"));
+        q.registerPolicy({
+            policyId: victimPolicyId,
+            tokenId: aliceTokenId,
+            vault: VAULT,
+            runbookHash: RUNBOOK_HASH,
+            watchdogs: attackerWs,
+            threshold: 2,
+            heartbeatTimeout: 30,
+            expiry: 0
+        });
+
+        // Case 2: attacker tries with a tokenId that doesn't even exist.
+        vm.prank(ATTACKER);
+        vm.expectRevert(); // ERC721NonexistentToken (custom error from OZ v5)
+        q.registerPolicy({
+            policyId: victimPolicyId,
+            tokenId: 999,
+            vault: VAULT,
+            runbookHash: RUNBOOK_HASH,
+            watchdogs: attackerWs,
+            threshold: 2,
+            heartbeatTimeout: 30,
+            expiry: 0
+        });
+
+        // Sanity: Alice can still register HER policy at HER tokenId.
+        vm.prank(ALICE);
+        q.registerPolicy({
+            policyId: victimPolicyId,
+            tokenId: aliceTokenId,
+            vault: VAULT,
+            runbookHash: RUNBOOK_HASH,
+            watchdogs: attackerWs,
+            threshold: 2,
+            heartbeatTimeout: 30,
+            expiry: 0
+        });
+        assertEq(q.tokenIdOf(victimPolicyId), aliceTokenId);
     }
 }

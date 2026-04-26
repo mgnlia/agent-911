@@ -37,8 +37,8 @@ contract Agent911VaultTest is Test {
         w2 = vm.addr(W2_PK);
         w3 = vm.addr(W3_PK);
 
-        q     = new WatchdogQuorum();
         nft   = new Agent911PolicyNFT();
+        q     = new WatchdogQuorum(nft);
         vault = new Agent911Vault(q, nft);
         usdc  = new MockERC20("USD Coin", "USDC", 6);
 
@@ -55,11 +55,13 @@ contract Agent911VaultTest is Test {
         vm.prank(ALICE);
         vault.bindPolicy(POLICY_ID, tokenId);
 
-        // Register the quorum policy with the three watchdogs
+        // Register the quorum policy with the three watchdogs (NFT owner only)
         address[] memory ws = new address[](3);
         ws[0] = w1; ws[1] = w2; ws[2] = w3;
+        vm.prank(ALICE);
         q.registerPolicy({
             policyId: POLICY_ID,
+            tokenId: tokenId,
             vault: address(vault),
             runbookHash: RUNBOOK_HASH,
             watchdogs: ws,
@@ -138,6 +140,39 @@ contract Agent911VaultTest is Test {
     function test_Rescue_RevertsWithoutQuorum() public {
         vm.expectRevert(bytes("quorum not confirmed"));
         vault.rescue(POLICY_ID, usdc);
+    }
+
+    function test_Rescue_IsOneShotPerPolicyId() public {
+        // First rescue path (canonical happy path).
+        uint64 expiry = uint64(block.timestamp + 5 minutes);
+        WatchdogQuorum.Attestation[] memory atts = new WatchdogQuorum.Attestation[](2);
+        atts[0] = WatchdogQuorum.Attestation({
+            observedAt: uint64(block.timestamp),
+            expiry: expiry,
+            signature: _sign(W1_PK, uint64(block.timestamp), expiry)
+        });
+        atts[1] = WatchdogQuorum.Attestation({
+            observedAt: uint64(block.timestamp),
+            expiry: expiry,
+            signature: _sign(W2_PK, uint64(block.timestamp), expiry)
+        });
+        q.confirmFailure(POLICY_ID, atts);
+
+        vault.rescue(POLICY_ID, usdc);
+        assertEq(usdc.balanceOf(SAFE), 10_000e6, "first rescue sweeps balance");
+        assertTrue(vault.rescued(POLICY_ID), "rescued flag set");
+
+        // Re-fund the vault — without an entry-guard the second rescue would
+        // sweep again. The fix must reject before reading any balance.
+        usdc.mint(address(vault), 5_000e6);
+        assertEq(usdc.balanceOf(address(vault)), 5_000e6);
+
+        vm.expectRevert(bytes("already rescued"));
+        vault.rescue(POLICY_ID, usdc);
+
+        // Funds remain in the vault — the safe was paid exactly once.
+        assertEq(usdc.balanceOf(address(vault)), 5_000e6, "second rescue did NOT sweep");
+        assertEq(usdc.balanceOf(SAFE), 10_000e6, "safe balance unchanged");
     }
 
     function test_TransferPolicyNFT_ChangesSafe() public {

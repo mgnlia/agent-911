@@ -62,7 +62,13 @@ contract Agent911Vault is ReentrancyGuard {
     /// @notice Sweep the entire balance of `token` to the safe address in
     ///         the policy NFT. Permissionless: quorum confirmation is the
     ///         only gate.
+    /// @dev    One-shot per policyId. The `rescued` flag is the single source
+    ///         of truth: once flipped, no future rescue (any token) can run
+    ///         under this policyId. Without this entry-guard the empty-vault
+    ///         "nothing to rescue" check is the only thing stopping a second
+    ///         rescue, which fails the moment anyone deposits more tokens.
     function rescue(bytes32 policyId, IERC20 token) external nonReentrant {
+        require(!rescued[policyId], "already rescued");
         require(quorum.isFailed(policyId), "quorum not confirmed");
 
         uint256 tokenId = policyNftId[policyId];
@@ -74,8 +80,8 @@ contract Agent911Vault is ReentrancyGuard {
         uint256 bal = token.balanceOf(address(this));
         require(bal > 0, "nothing to rescue");
 
-        // One-shot guard per (policyId, token) pair is overkill for a hackathon
-        // demo where the vault holds a single rescue asset; we guard per policy.
+        // Mark before external transfer (CEI). Combined with the entry guard
+        // above this makes rescue strictly one-shot per policyId.
         rescued[policyId] = true;
 
         token.safeTransfer(safe, bal);
