@@ -23,8 +23,8 @@ contract Deploy is Script {
 
         vm.startBroadcast(pk);
 
-        WatchdogQuorum    quorum = new WatchdogQuorum();
         Agent911PolicyNFT nft    = new Agent911PolicyNFT();
+        WatchdogQuorum    quorum = new WatchdogQuorum(nft);
         Agent911Vault     vault  = new Agent911Vault(quorum, nft);
         MockERC20         usdc   = new MockERC20("USD Coin (mock)", "mUSDC", 6);
 

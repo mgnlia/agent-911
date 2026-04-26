@@ -52,8 +52,8 @@ contract Agent911UniswapExecutorTest is Test {
         w2 = vm.addr(W2_PK);
         w3 = vm.addr(W3_PK);
 
-        q        = new WatchdogQuorum();
         nft      = new Agent911PolicyNFT();
+        q        = new WatchdogQuorum(nft);
         vault    = new Agent911Vault(q, nft);
         router   = new MockSwapRouter();
         exec     = new Agent911UniswapExecutor(q, nft, vault, router);
@@ -65,10 +65,11 @@ contract Agent911UniswapExecutorTest is Test {
         vm.prank(ALICE);
         vault.bindPolicy(POLICY_ID, tokenId);
 
-        // register quorum
+        // register quorum (NFT-owner gated)
         address[] memory ws = new address[](3);
         ws[0] = w1; ws[1] = w2; ws[2] = w3;
-        q.registerPolicy(POLICY_ID, address(vault), RUNBOOK_HASH, ws, 2, 30, 0);
+        vm.prank(ALICE);
+        q.registerPolicy(POLICY_ID, tokenId, address(vault), RUNBOOK_HASH, ws, 2, 30, 0);
 
         // Alice deposits 1000 VOL into vault
         volatile_.mint(ALICE, 1000e18);

@@ -37,8 +37,8 @@ contract Agent911VaultTest is Test {
         w2 = vm.addr(W2_PK);
         w3 = vm.addr(W3_PK);
 
-        q     = new WatchdogQuorum();
         nft   = new Agent911PolicyNFT();
+        q     = new WatchdogQuorum(nft);
         vault = new Agent911Vault(q, nft);
         usdc  = new MockERC20("USD Coin", "USDC", 6);
 
@@ -55,11 +55,13 @@ contract Agent911VaultTest is Test {
         vm.prank(ALICE);
         vault.bindPolicy(POLICY_ID, tokenId);
 
-        // Register the quorum policy with the three watchdogs
+        // Register the quorum policy with the three watchdogs (NFT owner only)
         address[] memory ws = new address[](3);
         ws[0] = w1; ws[1] = w2; ws[2] = w3;
+        vm.prank(ALICE);
         q.registerPolicy({
             policyId: POLICY_ID,
+            tokenId: tokenId,
             vault: address(vault),
             runbookHash: RUNBOOK_HASH,
             watchdogs: ws,

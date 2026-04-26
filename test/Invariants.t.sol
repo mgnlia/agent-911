@@ -69,8 +69,8 @@ contract InvariantsTest is StdInvariant, Test {
     bytes32 internal constant RUN_H  = keccak256("invariant/runbook");
 
     function setUp() public {
-        q     = new WatchdogQuorum();
         nft   = new Agent911PolicyNFT();
+        q     = new WatchdogQuorum(nft);
         vault = new Agent911Vault(q, nft);
         token = new MockERC20("T", "T", 18);
 
@@ -82,7 +82,8 @@ contract InvariantsTest is StdInvariant, Test {
         // Register a 2-of-3 quorum with throwaway watchdogs (signatures won't land)
         address[] memory ws = new address[](3);
         ws[0] = address(0x1); ws[1] = address(0x2); ws[2] = address(0x3);
-        q.registerPolicy(POLICY, address(vault), RUN_H, ws, 2, 30, 0);
+        vm.prank(ALICE);
+        q.registerPolicy(POLICY, tokenId, address(vault), RUN_H, ws, 2, 30, 0);
 
         h = new InvariantHandler(q, nft, vault, token);
         targetContract(address(h));
@@ -183,8 +184,8 @@ contract OneShotRescueInvariantsTest is StdInvariant, Test {
     }
 
     function setUp() public {
-        q     = new WatchdogQuorum();
         nft   = new Agent911PolicyNFT();
+        q     = new WatchdogQuorum(nft);
         vault = new Agent911Vault(q, nft);
         token = new MockERC20("T", "T", 18);
 
@@ -198,7 +199,8 @@ contract OneShotRescueInvariantsTest is StdInvariant, Test {
         address w3 = vm.addr(W3_PK);
         address[] memory ws = new address[](3);
         ws[0] = w1; ws[1] = w2; ws[2] = w3;
-        q.registerPolicy(POLICY, address(vault), RUN_H, ws, 2, 30, 0);
+        vm.prank(ALICE);
+        q.registerPolicy(POLICY, tokenId, address(vault), RUN_H, ws, 2, 30, 0);
 
         // Confirm failure so rescue() is now unblocked except for the one-shot guard.
         uint64 expiry = uint64(block.timestamp + 1 days);

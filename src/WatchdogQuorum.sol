@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title WatchdogQuorum
 /// @notice External failure oracle for autonomous onchain agents.
@@ -15,6 +16,13 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 ///         policy-NFT contracts read `isFailed(policyId)` to gate rescue.
 contract WatchdogQuorum is EIP712 {
     using ECDSA for bytes32;
+
+    /// @notice Policy NFT used to authenticate `registerPolicy` callers.
+    ///         A policyId can only be registered by an account that owns
+    ///         the policy-NFT tokenId it claims to bind to. This prevents
+    ///         an attacker from front-running a victim's registration with
+    ///         an attacker-controlled watchdog set against the same policyId.
+    IERC721 public immutable policyNFT;
 
     // --- storage ---
 
@@ -31,6 +39,11 @@ contract WatchdogQuorum is EIP712 {
 
     mapping(bytes32 => Policy) private _policies;
 
+    /// @notice policyId → policy-NFT tokenId used at registration time.
+    ///         Recorded for transparency; the auth check against the NFT
+    ///         owner happens inline in `registerPolicy`.
+    mapping(bytes32 => uint256) public tokenIdOf;
+
     // --- events ---
 
     event PolicyRegistered(
@@ -38,7 +51,8 @@ contract WatchdogQuorum is EIP712 {
         address indexed vault,
         bytes32 runbookHash,
         uint8   threshold,
-        uint64  heartbeatTimeout
+        uint64  heartbeatTimeout,
+        uint256 tokenId
     );
     event FailureConfirmed(
         bytes32 indexed policyId,
@@ -52,12 +66,24 @@ contract WatchdogQuorum is EIP712 {
         "FailureAttestation(bytes32 policyId,bytes32 runbookHash,uint64 observedAt,uint64 expiry,uint256 chainId)"
     );
 
-    constructor() EIP712("WatchdogQuorum", "1") {}
+    constructor(IERC721 _policyNFT) EIP712("WatchdogQuorum", "1") {
+        require(address(_policyNFT) != address(0), "policy NFT required");
+        policyNFT = _policyNFT;
+    }
 
     // --- registration ---
 
+    /// @notice Register a watchdog policy bound to a policy-NFT tokenId.
+    /// @dev    Only the current owner of `tokenId` can register the policy.
+    ///         Without this gate, an attacker could front-run any victim's
+    ///         registration call with the same `policyId` and an attacker-
+    ///         controlled watchdog set, allowing them to fire FailureConfirmed
+    ///         at will and forcibly drain the victim's vault — even though
+    ///         funds still land at the victim's safe, this is a denial-of-
+    ///         service / forced-exit attack on a healthy agent.
     function registerPolicy(
         bytes32 policyId,
+        uint256 tokenId,
         address vault,
         bytes32 runbookHash,
         address[] calldata watchdogs,
@@ -68,6 +94,9 @@ contract WatchdogQuorum is EIP712 {
         require(_policies[policyId].threshold == 0, "policy exists");
         require(watchdogs.length >= threshold && threshold >= 1, "bad threshold");
         require(runbookHash != bytes32(0), "runbook hash required");
+        // AUTH: only the policy-NFT owner can bind a policyId. ownerOf reverts
+        // for unminted tokenIds, so this also rejects bogus tokenIds.
+        require(policyNFT.ownerOf(tokenId) == msg.sender, "not policy NFT owner");
 
         Policy storage p = _policies[policyId];
         p.vault             = vault;
@@ -78,8 +107,9 @@ contract WatchdogQuorum is EIP712 {
         for (uint256 i; i < watchdogs.length; ++i) {
             p.watchdogs.push(watchdogs[i]);
         }
+        tokenIdOf[policyId] = tokenId;
 
-        emit PolicyRegistered(policyId, vault, runbookHash, threshold, heartbeatTimeout);
+        emit PolicyRegistered(policyId, vault, runbookHash, threshold, heartbeatTimeout, tokenId);
     }
 
     // --- confirmation (bundled quorum tx) ---
