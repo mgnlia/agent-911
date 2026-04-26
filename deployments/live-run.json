@@ -10,15 +10,15 @@
   "safeAddress": "0x5afe5afe5afe5afe5afe5afe5afe5afe5afe5afe",
   "watchdogs": [
     {
-      "id": "watchdog-1.agent911.eth",
+      "id": "watchdog-1.agent-911.eth",
       "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
     },
     {
-      "id": "watchdog-2.agent911.eth",
+      "id": "watchdog-2.agent-911.eth",
       "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
     },
     {
-      "id": "watchdog-3.agent911.eth",
+      "id": "watchdog-3.agent-911.eth",
       "address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
     }
   ],
@@ -56,9 +56,12 @@
     "rescue": {
       "hash": "0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2",
       "blockNumber": 29566831,
-      "explorer": "https://chainscan-galileo.0g.ai/tx/0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2"
+      "explorer": "https://chainscan-galileo.0g.ai/tx/0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2",
+      "executedBy": "local"
     }
   },
+  "executedBy": "local",
+  "executorNote": "KeeperHub does not currently support 0G testnet (chain 16602); the KH client is a drop-in stub that activates automatically when 0G support ships. This run used the local ethers signer fallback.",
   "finalBalances": {
     "safe": "1000000000",
     "vault": "0"
