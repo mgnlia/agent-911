@@ -15,6 +15,15 @@
  *     number the submission will need.
  *
  * Requires the AXL mesh already up (`bash infra/axl/up.sh`).
+ *
+ * ENS NOTE — load-bearing, not decorative:
+ *   The rescue destination is resolved at runtime from `safe.agent-911.eth`
+ *   on Ethereum mainnet. This is intentional: transferring ownership of the
+ *   `safe.agent-911.eth` ENS name on mainnet redirects every future rescue
+ *   on 0G to a new safe address — no contract upgrade, no policy re-mint,
+ *   no migration. The ENS record is the source of truth for the safe; the
+ *   contracts only receive the resolved address. Hardcoding here would make
+ *   the ENS integration purely cosmetic, which it is not.
  */
 
 import { spawn, ChildProcess } from "node:child_process";
@@ -33,6 +42,13 @@ const Contract = _Contract as any;
 const RPC_URL = "https://evmrpc-testnet.0g.ai";
 const CHAIN_ID = 16602;
 const EXPLORER = "https://chainscan-galileo.0g.ai";
+
+// Mainnet provider — used solely to resolve `safe.agent-911.eth` at rescue
+// time. ENS lives on Ethereum mainnet; resolving it here is what makes the
+// ENS integration load-bearing rather than ornamental.
+const MAINNET_RPC = "https://eth.llamarpc.com";
+const SAFE_ENS_NAME = "safe.agent-911.eth";
+const SAFE_FALLBACK_ADDRESS = ("0x" + "5afe".repeat(10)).slice(0, 42) as `0x${string}`;
 
 const STATE_DIR      = "/tmp/agent-911";
 const HEARTBEAT_PATH = join(STATE_DIR, "heartbeat.json");
@@ -118,9 +134,29 @@ async function main(): Promise<void> {
 
   // --- generate fresh policyId for this run ---
   const policyId = hexlify(randomBytes(32)) as `0x${string}`;
-  const safeAddr = ("0x" + "5afe".repeat(10)) as `0x${string}`; // 0x5afe5afe...5afe
-  const safeAddress = safeAddr.slice(0, 42) as `0x${string}`;
+  // currentRunPolicyId is captured for the inbox filter below — only this
+  // run's attestations should be admitted; stragglers from a prior crashed
+  // run carry a different policyId and would otherwise revert confirmFailure
+  // with "unauthorized signer" because the new policy has new watchdog keys.
+  const currentRunPolicyId = policyId;
   console.log(`[live] policyId: ${policyId}`);
+
+  // --- resolve safe.agent-911.eth on mainnet (load-bearing ENS) ---
+  // The hardcoded 0x5afe… is only a fallback so a flaky mainnet RPC doesn't
+  // brick the demo. In production this resolution is the entire mechanism
+  // for upgrading rescue destinations.
+  const mainnetProvider = new JsonRpcProvider(MAINNET_RPC);
+  let resolved: string | null = null;
+  try {
+    resolved = await mainnetProvider.resolveName(SAFE_ENS_NAME);
+  } catch (err) {
+    console.warn(`[live] WARN: mainnet ENS lookup threw (${String(err)}); using fallback`);
+  }
+  if (!resolved) {
+    console.warn(`[live] WARN: ${SAFE_ENS_NAME} did not resolve on mainnet; using fallback ${SAFE_FALLBACK_ADDRESS}`);
+  }
+  const safeAddress = (resolved ?? SAFE_FALLBACK_ADDRESS) as `0x${string}`;
+  console.log(`[live] ${SAFE_ENS_NAME} → ${resolved ?? `<unset; using fallback ${SAFE_FALLBACK_ADDRESS}>`}`);
   console.log(`[live] safeAddress: ${safeAddress}`);
 
   // --- 1. encrypt + upload runbook to 0G Storage ---
@@ -244,6 +280,21 @@ async function main(): Promise<void> {
   }
 
   await new Promise(r => setTimeout(r, 3000));
+
+  // Drain any stale messages left in the coordinator's AXL inbox by a prior
+  // crashed run. If we don't, attestations carrying a stale policyId can
+  // race ahead of this run's attestations and (a) be discarded by the
+  // policy-id filter below — fine — or (b) before the filter existed,
+  // poison confirmFailure with "unauthorized signer" reverts. We drain
+  // anyway so the inbox starts empty for a deterministic demo.
+  let drained = 0;
+  for (;;) {
+    const stale = await coord.recvJson<Record<string, unknown>>();
+    if (!stale) break;
+    drained++;
+  }
+  if (drained > 0) console.log(`[live] drained ${drained} stale AXL inbox message(s) before kill`);
+
   console.log("\n============================");
   console.log("[live] KILL -9 main-agent");
   console.log("============================\n");
@@ -258,7 +309,14 @@ async function main(): Promise<void> {
   while (atts.length < 3 && Date.now() - start < timeoutMs) {
     const msg = await coord.recvJson<Record<string, unknown>>();
     if (msg && typeof msg.payload === "object" && (msg.payload as { kind?: string }).kind === "Agent911.FailureAttestation") {
-      const p = msg.payload as { watchdogId: string; observedAt: number; expiry: number; signature: `0x${string}` };
+      const p = msg.payload as { watchdogId: string; observedAt: number; expiry: number; signature: `0x${string}`; policyId: `0x${string}` };
+      // Hard filter: only this run's policyId is admitted. Anything else is
+      // a straggler from a prior process and would revert confirmFailure
+      // with "unauthorized signer" against the freshly registered quorum.
+      if (p.policyId !== currentRunPolicyId) {
+        console.log(`[live] ignoring attestation from ${p.watchdogId} (policyId mismatch ${String(p.policyId).slice(0, 10)}…)`);
+        continue;
+      }
       if (!seen.has(p.watchdogId)) {
         seen.add(p.watchdogId);
         atts.push({ watchdogId: p.watchdogId, observedAt: BigInt(p.observedAt), expiry: BigInt(p.expiry), signature: p.signature });
