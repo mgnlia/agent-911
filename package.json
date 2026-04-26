@@ -19,6 +19,7 @@
     "anvil": "anvil --host 0.0.0.0 --block-time 2",
     "demo:start": "tsx scripts/demo-start.ts",
     "demo:kill": "tsx scripts/demo-kill-agent.ts",
+    "demo:attack": "tsx scripts/demo-attack.ts",
     "demo:reset": "tsx scripts/demo-reset.ts",
     "axl:up": "bash infra/axl/up.sh",
     "axl:down": "bash infra/axl/down.sh",
