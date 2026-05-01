@@ -7,7 +7,7 @@
 Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 6).
 
 <p align="center">
-  <img src="./cartoon.png" alt="Agent-911 — 8-panel cartoon explainer for non-crypto audiences" width="640" />
+  <img src="./agent-911.png" alt="Agent-911 — 8-panel cartoon explainer for non-crypto audiences" width="640" />
 </p>
 
 ---
