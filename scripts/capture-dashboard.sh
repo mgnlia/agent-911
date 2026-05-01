@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # capture-dashboard.sh — fully-automated screenshot capture of the demo flow.
-# Runs on a headless box (tested on <vps>); requires google-chrome + forge + pnpm.
+# Runs on a headless Linux box; requires google-chrome + forge + pnpm.
 #
 # Output: docs/screenshots/0{1..4}-*.png
 set -e
