@@ -18,7 +18,7 @@ node_modules/
 # OS
 .DS_Store
 
-# Internal strategy / planning docs (BRAINSTORM, DEBATE, HANDOFF, PROJECT, SPIKE)
+# Internal notes (local-only)
 strategy/
 
 # AXL runtime artifacts (per-node logs, run state, ed25519 PEM keys)
