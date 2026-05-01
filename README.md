@@ -45,22 +45,22 @@ Main agent (dies)  ─heartbeat─►  3 Watchdogs, each on distinct AXL node
                                           │  over Gensyn AXL /send /recv
                                           ▼
                                 WatchdogQuorum.sol (0G Chain)
-                                          │ FailureConfirmed
-                                          ▼
-                                KeeperHub (guaranteed exec)
-                                          │ rescue tx
-                                          ▼
+                                          │ emits FailureConfirmed
+                                          ▼  (composable — any protocol can subscribe)
                               Agent911Vault.rescue(policyId, token)
                                           │
                                           ▼
                             reads policyNFT.safeAddressOf(tokenId)
                                           │
-                           ──────┬─────────┴────────────────────────
-                           │ OR via Agent911UniswapExecutor       │
-                           │   exit-position → USDC via v3 SwapRouter
+                           ──────┬─────────┴────────────────────────┐
+                           │ optional: Agent911UniswapExecutor      │
+                           │   volatile position → USDC via v3      │
+                           │   SwapRouter (exactInputSingle)        │
+                           └────────────────┬───────────────────────┘
                                           │
                                           ▼
-                                  safe.agent-911.eth
+                          safe.agent-911.eth  ← resolved from mainnet
+                                                ENS at rescue time
 ```
 
 ## What's on-chain
