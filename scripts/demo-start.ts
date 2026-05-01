@@ -37,9 +37,30 @@ const WATCHDOGS = [
   { id: "watchdog-2.agent-911.eth", pk: "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6", axl: "http://127.0.0.1:9102" },
   { id: "watchdog-3.agent-911.eth", pk: "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", axl: "http://127.0.0.1:9103" },
 ];
-const SAFE_ADDR    = "0x000000000000000000000000000000005AFE5AFE";
+const SAFE_ADDR_FALLBACK = "0x000000000000000000000000000000005AFE5AFE";
+const ENS_SAFE_NAME      = "safe.agent-911.eth";
+const MAINNET_RPC        = "https://ethereum-rpc.publicnode.com";
 const POLICY_ID    = keccak256(toUtf8Bytes("policy/demo/v1")) as `0x${string}`;
 const RUNBOOK_HASH = keccak256(toUtf8Bytes("runbook/demo/v1")) as `0x${string}`;
+
+/** Resolve safe.agent-911.eth on mainnet. Falls back to the sentinel so the demo
+ *  doesn't break if the user hasn't set the ENS record yet. ENS resolution at
+ *  rescue time means transferring `safe.agent-911.eth` on mainnet redirects every
+ *  future rescue — that's the load-bearing ENS integration. */
+async function resolveSafeAddress(): Promise<string> {
+  try {
+    const p = new JsonRpcProvider(MAINNET_RPC);
+    const a = await p.resolveName(ENS_SAFE_NAME);
+    if (a) {
+      console.log(`[demo] resolved ${ENS_SAFE_NAME} → ${a}`);
+      return a;
+    }
+    console.warn(`[demo] WARN: ${ENS_SAFE_NAME} did not resolve; using fallback ${SAFE_ADDR_FALLBACK}`);
+  } catch (e) {
+    console.warn(`[demo] WARN: ENS resolution failed (${(e as Error).message}); using fallback`);
+  }
+  return SAFE_ADDR_FALLBACK;
+}
 
 function startProc(label: string, cmd: string, args: string[], env?: NodeJS.ProcessEnv): ChildProcess {
   const p = spawn(cmd, args, { stdio: ["ignore", "inherit", "inherit"], detached: true, env: { ...process.env, ...env } });
@@ -73,6 +94,9 @@ async function main(): Promise<void> {
   if (existsSync(STATE_DIR)) rmSync(STATE_DIR, { recursive: true, force: true });
   mkdirSync(STATE_DIR, { recursive: true });
 
+  // --- 0. resolve safe address from ENS ---
+  const SAFE_ADDR = await resolveSafeAddress();
+
   // --- 1. AXL ---
   console.log("[demo] ensuring AXL mesh is up...");
   const repoRoot = process.cwd();
@@ -100,10 +124,12 @@ async function main(): Promise<void> {
   const qF = new ContractFactory(abi("WatchdogQuorum"),    bytecode("WatchdogQuorum"),    deployer);
   const nF = new ContractFactory(abi("Agent911PolicyNFT"), bytecode("Agent911PolicyNFT"), deployer);
   const mF = new ContractFactory(abi("MockERC20"),         bytecode("MockERC20"),         deployer);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const quorum = (await (await qF.deploy()).waitForDeployment()) as any;
+  // NB: deploy NFT first; WatchdogQuorum constructor now takes IERC721 policyNFT
+  // (auth fix: registerPolicy gated on policyNFT.ownerOf(tokenId) == msg.sender).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nft    = (await (await nF.deploy()).waitForDeployment()) as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const quorum = (await (await qF.deploy(await nft.getAddress())).waitForDeployment()) as any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const usdc   = (await (await mF.deploy("USD Coin (mock)", "mUSDC", 6)).waitForDeployment()) as any;
   const vF = new ContractFactory(abi("Agent911Vault"), bytecode("Agent911Vault"), deployer);
@@ -122,8 +148,11 @@ async function main(): Promise<void> {
   await (await new Contract(addresses.nft, abi("Agent911PolicyNFT"), deployer)
     .mintPolicy(alice.address, "ipfs://agent-911/demo-runbook.enc", RUNBOOK_HASH, SAFE_ADDR)).wait();
   await (await new Contract(addresses.vault, abi("Agent911Vault"), alice).bindPolicy(POLICY_ID, 1n)).wait();
-  await (await new Contract(addresses.quorum, abi("WatchdogQuorum"), deployer).registerPolicy(
-    POLICY_ID, addresses.vault, RUNBOOK_HASH,
+  // NB: registerPolicy now requires tokenId — gated on policyNFT.ownerOf(tokenId) == msg.sender
+  // (front-running fix in WatchdogQuorum.sol). Demo mints tokenId=1 to Alice; deployer
+  // calls registerPolicy via Alice's signer below.
+  await (await new Contract(addresses.quorum, abi("WatchdogQuorum"), alice).registerPolicy(
+    POLICY_ID, 1n, addresses.vault, RUNBOOK_HASH,
     WATCHDOGS.map(w => new Wallet(w.pk).address),
     2, 30, 0,
   )).wait();
