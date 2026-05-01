@@ -57,7 +57,7 @@ export class KeeperHub {
   /**
    * Request KeeperHub to execute the rescue. If no credentials are
    * available, execute directly with a local signer as the fallback path
-   * documented in <internal> ("pre-warmed KeeperHub webhook").
+   * ("pre-warmed KeeperHub webhook" pattern — direct broadcast fallback).
    */
   async executeRescue(spec: RescueJobSpec): Promise<RescueReceipt> {
     const started = Date.now();

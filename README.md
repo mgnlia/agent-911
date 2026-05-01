@@ -6,6 +6,10 @@
 
 Built for **ETHGlobal OpenAgents 2026** (Apr 24 – May 6).
 
+<p align="center">
+  <img src="./cartoon.png" alt="Agent-911 — 8-panel cartoon explainer for non-crypto audiences" width="640" />
+</p>
+
 ---
 
 ## Why this exists
@@ -228,14 +232,10 @@ Realistic public-infrastructure budget (from our red-team analysis in [<internal
 
 ## Docs
 
-- [<internal>](./<internal>) — 30-idea ideation + scoring rubric
-- [<internal>](./<internal>) — 6-round codex debate that landed us on this idea
-- [<internal>](./<internal>) — architecture deep dive + 10-day plan
-- [<internal>](./<internal>) — Day 1 first-4-hour runbook + realistic timing
 - [`video/out/agent-911.mp4`](./video/out/agent-911.mp4) — **rendered 70-second explainer** (Remotion, 9 scenes). [source](./video/)
 - [<internal>](./<internal>) — 3-minute live-dashboard recording script
-- [<internal>](./<internal>) — 8-panel cartoon for non-crypto audiences
-- [<internal>](./<internal>) — sponsor-platform feedback (Uniswap, KeeperHub, Gensyn, ENS, 0G)
+- [<internal>](./<internal>) — panel-by-panel script for the cartoon shown above
+- [<internal>](./<internal>) — sponsor-platform feedback
 
 ## Credits
 
