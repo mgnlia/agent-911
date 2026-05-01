@@ -230,12 +230,9 @@ Realistic public-infrastructure budget (per pre-build red-team analysis): 30s op
 - **Slippage exploit during rescue** → KeeperHub dry-run step with circuit breaker on slippage delta.
 - **Compromised watchdog key** → 2-of-3 threshold + ERC-8004 reputation slashing in `AgentIdentityRegistry`.
 
-## Docs
+## Video
 
-- [`video/out/agent-911.mp4`](./video/out/agent-911.mp4) — **rendered 70-second explainer** (Remotion, 9 scenes). [source](./video/)
-- [<internal>](./<internal>) — 3-minute live-dashboard recording script
-- [<internal>](./<internal>) — panel-by-panel script for the cartoon shown above
-- [<internal>](./<internal>) — sponsor-platform feedback
+[`video/out/agent-911.mp4`](./video/out/agent-911.mp4) — **rendered 70-second explainer** (Remotion, 9 scenes). [source](./video/)
 
 ## Credits
 
