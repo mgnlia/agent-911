@@ -220,7 +220,7 @@ Live-run transaction hashes (all on [chainscan-galileo](https://chainscan-galile
 | **`confirmFailure`** (block 29,566,814) | [`0xa74b14fd…`](https://chainscan-galileo.0g.ai/tx/0xa74b14fdb25d9a9052262e1d31652a5362e6dee13e6dd36bac761cbb497d5799) |
 | **`rescue`** (block 29,566,831) | [`0x52d85cb6…`](https://chainscan-galileo.0g.ai/tx/0x52d85cb6052f0a760cad2ab362e9d336937ce8827d5aa6fc7c6e1be428dedcc2) |
 
-Realistic public-infrastructure budget (from our red-team analysis in [<internal>](./<internal>)): 30s optimistic / 98s realistic / 2-5 min in the bad case. We pre-warm the KeeperHub webhook and bundle all attestations into one quorum tx — measured at **~21s** on live 0G testnet.
+Realistic public-infrastructure budget (per pre-build red-team analysis): 30s optimistic / 98s realistic / 2-5 min in the bad case. We pre-warm the KeeperHub webhook and bundle all attestations into one quorum tx — measured at **~21s** on live 0G testnet.
 
 ## Known failure modes (not hidden)
 
@@ -239,4 +239,4 @@ Realistic public-infrastructure budget (from our red-team analysis in [<internal
 
 ## Credits
 
-Iterated with [OpenAI Codex CLI](https://github.com/openai/codex) across multiple adversarial review rounds. Implementation by [Claude Opus 4.7](https://claude.com/claude-code) on a <vps> VPS.
+Iterated with [OpenAI Codex CLI](https://github.com/openai/codex) across multiple adversarial review rounds. Implementation by [Claude Opus 4.7](https://claude.com/claude-code) on a Linux VPS.

@@ -42,7 +42,7 @@ export const Kill: React.FC = () => {
           maxWidth: 1400,
         }}
       >
-        <div style={{color: theme.muted, fontSize: 14, marginBottom: 8}}>$ <vps> — demo-kill</div>
+        <div style={{color: theme.muted, fontSize: 14, marginBottom: 8}}>$ ops@vps — demo-kill</div>
         <div style={{color: theme.live}}>$ <span>{typed}</span><span style={{color: theme.accent}}>{caret}</span></div>
         {frame > 60 ? <div style={{color: theme.dead, marginTop: 8}}>[demo-kill] SIGKILL → main-agent pid=715299</div> : null}
       </div>
