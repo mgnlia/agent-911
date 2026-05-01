@@ -78,7 +78,9 @@ function resolveConfig(state: DemoState): Resolved {
   const quorumAddr = (process.env.DEMO_QUORUM_ADDR ?? state.addresses?.quorum) as `0x${string}` | undefined;
   const policyId   = (process.env.DEMO_POLICY_ID   ?? state.policyId)            as `0x${string}` | undefined;
   const runbookHash = (process.env.DEMO_RUNBOOK_HASH ?? DEFAULT_RUNBOOK_HASH)   as `0x${string}`;
-  const funderPk    = process.env.DEMO_FUNDER_PK ?? DEFAULT_FUNDER_PK;
+  // Funder priority: explicit DEMO_FUNDER_PK > PRIVATE_KEY (set during
+  // demo:live-record on 0G testnet) > anvil deterministic acct[0] (local).
+  const funderPk    = process.env.DEMO_FUNDER_PK ?? process.env.PRIVATE_KEY ?? DEFAULT_FUNDER_PK;
   const dashboardUrl = process.env.DASHBOARD_URL ?? "http://127.0.0.1:4000";
   if (!quorumAddr) throw new Error("DEMO_QUORUM_ADDR (or demo state) required");
   if (!policyId)   throw new Error("DEMO_POLICY_ID (or demo state) required");
@@ -187,7 +189,9 @@ async function main(): Promise<void> {
   // unauthorized signature in the bundle.
   const funder = new Wallet(cfg.funderPk, provider);
   console.log(`[demo-attack] funding ${attacker.address} from ${funder.address}…`);
-  const fundTx = await funder.sendTransaction({ to: attacker.address, value: parseEther("0.1") });
+  // Need only enough for one reverting confirmFailure call (~0.001 0G).
+  // 0.005 keeps headroom but stays light on testnet gas.
+  const fundTx = await funder.sendTransaction({ to: attacker.address, value: parseEther("0.005") });
   await fundTx.wait();
 
   const quorum = new Contract(cfg.quorumAddr, abi("WatchdogQuorum"), attacker);

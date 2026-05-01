@@ -3,17 +3,16 @@
   "chainName": "0G Testnet (Galileo)",
   "rpcUrl": "https://evmrpc-testnet.0g.ai",
   "deployer": "0xa64ed1bd9D75338f65F8E1d65b58330D9A4E0091",
-  "deployedAt": "2026-04-25T00:00:00Z",
-  "commit": "a90899e",
+  "deployedAt": "2026-05-01T22:00:00Z",
   "contracts": {
-    "WatchdogQuorum":    "0x005319a89579eFA98abf167fd9C471AAFD14ef93",
-    "Agent911PolicyNFT": "0xfc982634E1555Bfc73B5BAc8Ff0264e4e42aa940",
-    "Agent911Vault":     "0x048368Ad21cb18CCfe35532049831F6591098ce6",
-    "MockERC20_mUSDC":   "0xA470fe8611990DeB0760F481f30C9F4DB4755ba0"
+    "WatchdogQuorum":    "0xdaa72410bb8ecdc54704e60e14fc802a0a7223ea",
+    "Agent911PolicyNFT": "0x4714f2d41b1b08b6c8b6886a595931b2d0e68238",
+    "Agent911Vault":     "0xa03e0e350012cd254ffcee6d82a5892a52d7c54f",
+    "MockERC20_mUSDC":   "0xdd002a44638513b56a282aa648041e03e5496047"
   },
   "notes": [
-    "0G testnet RPC returned null responses on tx receipt lookup — use `--skip-simulation --legacy` for redeploys, and verify via `cast code <addr>`.",
-    "Deploy.s.sol minted 1_000_000 mUSDC to the deployer on launch.",
+    "Redeployed with security fixes (one-shot rescue, registerPolicy gated on NFT owner, MEV-protected swap).",
+    "Deploy.s.sol mints 1_000_000 mUSDC to the deployer on launch.",
     "Gas is paid in 0G (chain 16602)."
   ]
 }
