@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent-911 — the first onchain failure oracle</title>
+  <meta name="description" content="A 911 number for crashed AI agents. Three independent watchdogs detect agent failure, prove it onchain, then rescue the funds — before the market does." />
+  <meta property="og:title" content="Agent-911 — the first onchain failure oracle" />
+  <meta property="og:description" content="Existing tools watch the user. Agent-911 watches the agent." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%A8%3C/text%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { background: #0a0a0a; }
+    body { font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+    .grid-bg {
+      background-image: radial-gradient(circle, rgba(239,68,68,0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .glow { box-shadow: 0 0 80px -10px rgba(239,68,68,0.4); }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .typing::after {
+      content: "▋";
+      animation: blink 1s steps(1) infinite;
+      color: #ef4444;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    a.linky { border-bottom: 1px solid currentColor; transition: opacity .15s; }
+    a.linky:hover { opacity: .7; }
+    .arrow { color: #ef4444; }
+  </style>
+</head>
+<body class="text-zinc-100 antialiased">
+
+  <!-- HERO -->
+  <section class="relative min-h-[100svh] flex flex-col justify-center px-6 sm:px-10 grid-bg">
+    <div class="max-w-6xl mx-auto w-full">
+      <div class="mono text-xs sm:text-sm text-red-500 mb-6 tracking-[0.3em]">🚨 AGENT-911</div>
+      <h1 class="text-4xl sm:text-6xl md:text-7xl font-bold leading-[1.05] tracking-tight">
+        Existing tools watch the user.
+        <br />
+        <span class="text-red-500">Agent-911 watches the agent.</span>
+      </h1>
+      <p class="mt-8 text-lg sm:text-xl text-zinc-400 max-w-3xl leading-relaxed">
+        The first <em>onchain</em> failure oracle for autonomous agents. When the agent dies — OOM, hangs, network partition — three independent watchdogs notice the silence, prove it onchain, and rescue the funds before the market does.
+      </p>
+      <div class="mt-12 flex flex-wrap gap-3 mono text-sm">
+        <a href="#demo" class="px-5 py-3 bg-red-500 hover:bg-red-600 text-black font-bold rounded-md transition">▶ Watch the rescue (70s)</a>
+        <a href="https://github.com/guzus/agent-911" target="_blank" rel="noopener" class="px-5 py-3 border border-zinc-700 hover:border-zinc-500 rounded-md transition">github.com/guzus/agent-911</a>
+      </div>
+      <div class="mt-16 flex flex-wrap gap-x-10 gap-y-4 mono text-xs text-zinc-500 uppercase tracking-wider">
+        <span>Built for ETHGlobal OpenAgents 2026</span>
+        <span>· Live on 0G Testnet (Galileo)</span>
+        <span>· Deadline May 6, 2026</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE PROBLEM -->
+  <section class="px-6 sm:px-10 py-24 sm:py-32 border-t border-zinc-900">
+    <div class="max-w-5xl mx-auto">
+      <div class="mono text-xs text-red-500 mb-6 tracking-[0.3em]">// THE GAP</div>
+      <div class="grid sm:grid-cols-3 gap-8 sm:gap-12">
+        <div>
+          <div class="text-5xl sm:text-6xl font-bold text-red-500">40<span class="text-2xl text-zinc-500">%</span></div>
+          <p class="mt-3 text-zinc-400 leading-relaxed">of onchain transactions now come from AI agents.</p>
+        </div>
+        <div>
+          <div class="text-5xl sm:text-6xl font-bold text-red-500">$400<span class="text-2xl text-zinc-500">M</span></div>
+          <p class="mt-3 text-zinc-400 leading-relaxed">liquidated in the Feb&nbsp;2026 agent cascade.</p>
+        </div>
+        <div>
+          <div class="text-5xl sm:text-6xl font-bold text-red-500">0<span class="text-2xl text-zinc-500"> tools</span></div>
+          <p class="mt-3 text-zinc-400 leading-relaxed">watch the agent itself when it dies. They all watch the user.</p>
+        </div>
+      </div>
+
+      <div class="mt-16 grid md:grid-cols-2 gap-10 text-zinc-300 leading-relaxed">
+        <div>
+          <h3 class="font-bold text-white mb-3">What exists today</h3>
+          <p class="text-zinc-400">Coinbase, Openfort, Human.tech, Safe modules — all solve the <em>intent</em> problem. Spending caps. Whitelists. Leashes. They watch what the user authorized.</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-white mb-3">What's missing</h3>
+          <p class="text-zinc-400">When the agent itself dies, hangs, hallucinates, or misses a liquidation window — the funds it was managing rot in positions that were only safe while the agent was healthy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO VIDEO -->
+  <section id="demo" class="px-6 sm:px-10 py-24 sm:py-32 border-t border-zinc-900 bg-gradient-to-b from-zinc-950 to-black">
+    <div class="max-w-5xl mx-auto">
+      <div class="mono text-xs text-red-500 mb-6 tracking-[0.3em]">// THE DEMO</div>
+      <h2 class="text-3xl sm:text-5xl font-bold mb-4">Kill the agent. Watch the rescue.</h2>
+      <p class="text-zinc-400 max-w-2xl mb-10">70 seconds. Live on 0G testnet. Every transaction hash verifiable on chainscan.</p>
+      <div class="rounded-xl overflow-hidden border border-zinc-800 glow">
+        <video controls preload="metadata" class="w-full aspect-video bg-black" poster="">
+          <source src="https://github.com/guzus/agent-911/raw/main/video/out/agent-911.mp4" type="video/mp4" />
+          Your browser doesn't support video. <a class="underline" href="https://github.com/guzus/agent-911/raw/main/video/out/agent-911.mp4">Direct link.</a>
+        </video>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="px-6 sm:px-10 py-24 sm:py-32 border-t border-zinc-900">
+    <div class="max-w-5xl mx-auto">
+      <div class="mono text-xs text-red-500 mb-6 tracking-[0.3em]">// THE FLOW</div>
+      <h2 class="text-3xl sm:text-5xl font-bold mb-12">From silence to safe in 13 seconds.</h2>
+      <div class="mono text-sm sm:text-base text-zinc-400 leading-loose whitespace-pre overflow-x-auto rounded-lg border border-zinc-800 bg-black/40 p-6">
+<span class="text-white">main-agent</span> emits heartbeat
+     <span class="arrow">↓</span>
+<span class="text-white">3 watchdogs</span> on separate <span class="text-emerald-400">Gensyn AXL</span> nodes (distinct ed25519 keys)
+     <span class="arrow">↓</span> <span class="text-zinc-600">heartbeat goes stale</span>
+each watchdog signs <span class="text-emerald-400">EIP-712 FailureAttestation</span>
+     <span class="arrow">↓</span> <span class="text-zinc-600">signatures route over Yggdrasil mesh</span>
+coordinator collects 2-of-3
+     <span class="arrow">↓</span>
+<span class="text-emerald-400">WatchdogQuorum.confirmFailure(policyId, [sigs])</span>  ← onchain
+     <span class="arrow">↓</span> <span class="text-zinc-600">emits FailureConfirmed event (composable)</span>
+<span class="text-emerald-400">Agent911Vault.rescue(policyId, token)</span>
+     <span class="arrow">↓</span> <span class="text-zinc-600">reads policyNFT.safeAddressOf(tokenId)</span>
+funds → <span class="text-white">safe.agent-911.eth</span>  ← resolved from <span class="text-emerald-400">ENS</span> at rescue time
+     <span class="arrow">↓</span>
+✓ <span class="text-emerald-400">kill-to-safe: 13s anvil / 20s 0G testnet</span></div>
+
+      <div class="mt-12 grid sm:grid-cols-3 gap-6">
+        <div class="rounded-lg border border-zinc-800 p-6">
+          <div class="mono text-xs text-emerald-400 mb-2">// 0G — iNFT</div>
+          <p class="text-zinc-300 text-sm leading-relaxed"><strong class="text-white">Agent911PolicyNFT</strong> is an ERC-7857-flavored iNFT. Owns the encrypted runbook on 0G Storage. Transferring the NFT changes the rescue target — no vault redeploy.</p>
+        </div>
+        <div class="rounded-lg border border-zinc-800 p-6">
+          <div class="mono text-xs text-emerald-400 mb-2">// Gensyn — AXL</div>
+          <p class="text-zinc-300 text-sm leading-relaxed">Three watchdogs, three separate AXL nodes, three distinct ed25519 peer IDs. Yggdrasil mesh. Same-host watchdogs would die <em>with</em> the agent — isolation is definitional.</p>
+        </div>
+        <div class="rounded-lg border border-zinc-800 p-6">
+          <div class="mono text-xs text-emerald-400 mb-2">// ENS — AI Agents</div>
+          <p class="text-zinc-300 text-sm leading-relaxed"><code class="mono text-emerald-300">safe.agent-911.eth</code> resolved on mainnet at rescue time. Transfer the name, redirect the rescue. ENS is not a label — it's the router.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE DEPLOYMENTS -->
+  <section class="px-6 sm:px-10 py-24 sm:py-32 border-t border-zinc-900 bg-gradient-to-b from-black to-zinc-950">
+    <div class="max-w-5xl mx-auto">
+      <div class="mono text-xs text-red-500 mb-6 tracking-[0.3em]">// LIVE ON-CHAIN</div>
+      <h2 class="text-3xl sm:text-5xl font-bold mb-4">Deployed on 0G Testnet (Galileo).</h2>
+      <p class="text-zinc-400 mb-10">Chain ID 16602. End-to-end kill→rescue cycle executed; every tx confirmed.</p>
+      <div class="rounded-lg border border-zinc-800 overflow-hidden">
+        <table class="w-full mono text-sm">
+          <thead class="bg-zinc-900/60 text-zinc-500 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="text-left p-4">Contract</th>
+              <th class="text-left p-4">Address</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-900">
+            <tr class="hover:bg-zinc-900/40">
+              <td class="p-4 text-zinc-300">WatchdogQuorum</td>
+              <td class="p-4"><a class="text-emerald-400 linky" href="https://chainscan-galileo.0g.ai/address/0x005319a89579eFA98abf167fd9C471AAFD14ef93" target="_blank" rel="noopener">0x005319a89579eFA98abf167fd9C471AAFD14ef93</a></td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40">
+              <td class="p-4 text-zinc-300">Agent911PolicyNFT</td>
+              <td class="p-4"><a class="text-emerald-400 linky" href="https://chainscan-galileo.0g.ai/address/0xfc982634E1555Bfc73B5BAc8Ff0264e4e42aa940" target="_blank" rel="noopener">0xfc982634E1555Bfc73B5BAc8Ff0264e4e42aa940</a></td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40">
+              <td class="p-4 text-zinc-300">Agent911Vault</td>
+              <td class="p-4"><a class="text-emerald-400 linky" href="https://chainscan-galileo.0g.ai/address/0x048368Ad21cb18CCfe35532049831F6591098ce6" target="_blank" rel="noopener">0x048368Ad21cb18CCfe35532049831F6591098ce6</a></td>
+            </tr>
+            <tr class="hover:bg-zinc-900/40">
+              <td class="p-4 text-zinc-300">MockERC20 (mUSDC)</td>
+              <td class="p-4"><a class="text-emerald-400 linky" href="https://chainscan-galileo.0g.ai/address/0xA470fe8611990DeB0760F481f30C9F4DB4755ba0" target="_blank" rel="noopener">0xA470fe8611990DeB0760F481f30C9F4DB4755ba0</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-8 grid sm:grid-cols-2 gap-4 mono text-sm">
+        <div class="rounded-lg border border-zinc-800 p-5">
+          <div class="text-zinc-500 text-xs uppercase tracking-wider mb-1">Kill → 3/3 attestations</div>
+          <div class="text-2xl text-white">5.48 s</div>
+        </div>
+        <div class="rounded-lg border border-zinc-800 p-5">
+          <div class="text-zinc-500 text-xs uppercase tracking-wider mb-1">Kill → FailureConfirmed</div>
+          <div class="text-2xl text-white">13.11 s</div>
+        </div>
+        <div class="rounded-lg border border-zinc-800 p-5 sm:col-span-2 bg-red-500/10 border-red-500/30">
+          <div class="text-red-300 text-xs uppercase tracking-wider mb-1">Kill → safe (live 0G)</div>
+          <div class="text-3xl text-red-400">20.51 s</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRY IT -->
+  <section class="px-6 sm:px-10 py-24 sm:py-32 border-t border-zinc-900">
+    <div class="max-w-4xl mx-auto">
+      <div class="mono text-xs text-red-500 mb-6 tracking-[0.3em]">// REPRODUCE</div>
+      <h2 class="text-3xl sm:text-5xl font-bold mb-8">Run it locally.</h2>
+      <pre class="mono text-sm leading-relaxed bg-black/60 border border-zinc-800 rounded-lg p-6 overflow-x-auto"><span class="text-zinc-500"># clone + install</span>
+git clone https://github.com/guzus/agent-911 &amp;&amp; cd agent-911
+pnpm install &amp;&amp; forge build &amp;&amp; forge test  <span class="text-zinc-500"># 25/25 ✓</span>
+
+<span class="text-zinc-500"># build the gensyn AXL mesh binary (one-time)</span>
+git clone https://github.com/gensyn-ai/axl /tmp/axl-src
+GOTOOLCHAIN=go1.25.5 go -C /tmp/axl-src build -o /tmp/axl-node ./cmd/node/
+export AXL_NODE=/tmp/axl-node
+
+<span class="text-zinc-500"># local kill→rescue, 13s end-to-end</span>
+DEMO_ATTACK=1 pnpm demo:start          <span class="text-zinc-500"># in terminal 1</span>
+pnpm demo:kill                          <span class="text-zinc-500"># in terminal 2 — the inflection</span>
+<span class="text-emerald-400">open http://127.0.0.1:4000</span>             <span class="text-zinc-500"># tri-pane dashboard</span></pre>
+    </div>
+  </section>
+
+  <!-- SPONSOR TRACKS -->
+  <section class="px-6 sm:px-10 py-24 sm:py-32 border-t border-zinc-900 bg-gradient-to-b from-zinc-950 to-black">
+    <div class="max-w-5xl mx-auto">
+      <div class="mono text-xs text-red-500 mb-6 tracking-[0.3em]">// SUBMITTED FOR</div>
+      <div class="grid sm:grid-cols-3 gap-6">
+        <a href="https://docs.0g.ai/build-with-0g/inft" target="_blank" rel="noopener" class="rounded-lg border border-zinc-800 hover:border-emerald-500/50 transition p-6 group">
+          <div class="mono text-xs text-emerald-400 mb-2 tracking-wider">0G LABS</div>
+          <div class="text-xl font-bold text-white group-hover:text-emerald-300 transition">Best Autonomous Agents, Swarms &amp; iNFT Innovations</div>
+          <p class="mt-3 text-sm text-zinc-400">ERC-7857 PolicyNFT controls encrypted runbook on 0G Storage. 3-watchdog swarm. Transfer-changes-rescue is the canonical iNFT demo.</p>
+        </a>
+        <a href="https://github.com/gensyn-ai/axl" target="_blank" rel="noopener" class="rounded-lg border border-zinc-800 hover:border-emerald-500/50 transition p-6 group">
+          <div class="mono text-xs text-emerald-400 mb-2 tracking-wider">GENSYN</div>
+          <div class="text-xl font-bold text-white group-hover:text-emerald-300 transition">Best Application of Agent eXchange Layer (AXL)</div>
+          <p class="mt-3 text-sm text-zinc-400">Three AXL binaries, distinct ed25519 keys, real Yggdrasil mesh. Watchdog isolation is definitionally AXL.</p>
+        </a>
+        <a href="https://docs.ens.domains/" target="_blank" rel="noopener" class="rounded-lg border border-zinc-800 hover:border-emerald-500/50 transition p-6 group">
+          <div class="mono text-xs text-emerald-400 mb-2 tracking-wider">ENS</div>
+          <div class="text-xl font-bold text-white group-hover:text-emerald-300 transition">Best ENS Integration for AI Agents</div>
+          <p class="mt-3 text-sm text-zinc-400"><code class="mono text-xs">agent-911.eth</code> registered. 5 subnames per role. <code class="mono text-xs">safe.agent-911.eth</code> resolved at rescue time — load-bearing, not decorative.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="px-6 sm:px-10 py-16 border-t border-zinc-900">
+    <div class="max-w-5xl mx-auto flex flex-wrap gap-6 justify-between mono text-sm text-zinc-500">
+      <div class="flex flex-col gap-2">
+        <span class="text-white text-base">🚨 Agent-911</span>
+        <span>The first onchain failure oracle for autonomous agents.</span>
+        <span>Built for ETHGlobal OpenAgents 2026.</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <a class="hover:text-zinc-200" href="https://github.com/guzus/agent-911" target="_blank" rel="noopener">github.com/guzus/agent-911</a>
+        <a class="hover:text-zinc-200" href="https://x.com/uncanny_guzus" target="_blank" rel="noopener">@uncanny_guzus</a>
+        <a class="hover:text-zinc-200" href="https://app.ens.domains/agent-911.eth" target="_blank" rel="noopener">agent-911.eth</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
